@@ -105,7 +105,6 @@ def user_panel(bot, update):
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.send_content]))
 def choose_your_channel(bot, update):
-    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
     general_message = TextMessage(ReadyMessage.choose_your_channel)
     btn_list = []
@@ -146,12 +145,12 @@ def get_post_channel(bot, update):
 
 
 def get_channel_name(bot, update):
-    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
 
     channel_name = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "channel_name", channel_name)
-
+    t = dispatcher.get_conversation_data(update,"channel_name")
+    print(t)
     text_message = TextMessage(ReadyMessage.enter_channel_nick_name)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
@@ -164,7 +163,6 @@ def get_channel_name(bot, update):
 
 
 def get_channel_nick_name(bot, update):
-    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
 
     channel_nick_name = update.get_effective_message().text
@@ -182,7 +180,6 @@ def get_channel_nick_name(bot, update):
 
 
 def get_channel_description(bot, update):
-    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
 
     channel_description = update.get_effective_message().text
@@ -208,7 +205,6 @@ def get_channel_description(bot, update):
 
 
 def get_channel_category(bot, update):
-    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
 
     channel_category_name = update.get_effective_message().text_message
@@ -227,7 +223,6 @@ def get_channel_category(bot, update):
 
 
 def get_channel_logo(bot, update):
-    dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     access_hash = user_peer.access_hash
@@ -235,11 +230,13 @@ def get_channel_logo(bot, update):
     logo_obj = Logo(file_id=logo.file_id, access_hash=logo.access_hash, file_size=logo.file_size, thumb=logo.thumb)
     insert_logo(logo_obj)
     logo = get_logo_by_fileid_access_hash(logo.file_id, logo.access_hash)
-    post_channel_id = dispatcher.get_conversation_data(update, "post_channel_id")
+
     channel_name = dispatcher.get_conversation_data(update, "channel_name")
-    channel_nick_name = dispatcher.get_conversation_data(update, "channel_nick_name")
     channel_description = dispatcher.get_conversation_data(update, "channel_description")
+    channel_nick_name = dispatcher.get_conversation_data(update, "channel_nick_name")
     channel_category_id = dispatcher.get_conversation_data(update, "channel_category_id")
+    post_channel_id = dispatcher.get_conversation_data(update, "post_channel_id")
+    print(channel_name, channel_description, channel_nick_name, channel_category_id, post_channel_id)
     content_obj = Content(channel_name=channel_name, channel_description=channel_description,
                           channel_nick_name=channel_nick_name,
                           category_id=channel_category_id, channel_logo_id=logo.id,
