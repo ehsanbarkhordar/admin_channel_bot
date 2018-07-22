@@ -1,7 +1,8 @@
-from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter
+from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter, PhotoFilter
 from balebot.handlers import MessageHandler, CommandHandler
 from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, JsonMessage
-from db.db_handler import create_all_table, get_all_categories, get_category_by_name, get_logo_by_id
+from db.db_handler import create_all_table, get_all_categories, get_category_by_name, \
+    get_logo_by_id, get_all_channels, get_channel_by_name
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -50,14 +51,19 @@ def start_conversation(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     if is_admin(user_id):
-        btn_list = [
-            TemplateMessageButton(text=TMessage.get_new_content, value=TMessage.get_new_content, action=0),
-            TemplateMessageButton(text=TMessage.add_channel, value=TMessage.add_channel, action=0),
-            TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
-            TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
+        admin_panel(bot, update)
     else:
-        btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
-                    TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
+        user_panel(bot, update)
+
+
+def admin_panel(bot, update):
+    user_peer = update.get_effective_user()
+    user_id = user_peer.peer_id
+    btn_list = [
+        TemplateMessageButton(text=TMessage.get_new_content, value=TMessage.get_new_content, action=0),
+        TemplateMessageButton(text=TMessage.add_channel, value=TMessage.add_channel, action=0),
+        TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
+        TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
@@ -77,30 +83,165 @@ def start_conversation(bot, update):
                                                         ])
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.send_content]))
-def choose_your_channel(bot, update):
-    dispatcher.clear_conversation_data(update)
+def user_panel(bot, update):
     user_peer = update.get_effective_user()
-
-    general_message = TextMessage(ReadyMessage.choose_your_channel)
-    btn_list = []
-    channel_list = [{"name": "کانال آموزش قرآن", "user_id": 2, "access_hash": 32153},
-                    {"name": "کانال آموزش زبان", "user_id": 2, "access_hash": 32153}]
-    for channel in channel_list:
-        btn_list += [TemplateMessageButton(text=channel.get("name"), value=channel.get("name"), action=0)]
-
+    user_id = user_peer.peer_id
+    btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
+                TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
+    general_message = TextMessage(ReadyMessage.start_conversation)
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-
+    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
                                                         MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.back),
-                                                            start_conversation),
-                                                        MessageHandler(TextFilter(), info)])
+                                                            TemplateResponseFilter(keywords=TMessage.send_content),
+                                                            choose_your_channel),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.send_content]))
+def choose_your_channel(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+    general_message = TextMessage(ReadyMessage.choose_your_channel)
+    btn_list = []
+    channel_list = get_all_channels()
+    channel_name_list = []
+    for channel in channel_list:
+        channel_name_list.append(channel.name)
+        btn_list += [TemplateMessageButton(text=channel.name, value=channel.name, action=0)]
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            TemplateResponseFilter(keywords=channel_name_list),
+                                                            get_post_channel),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_post_channel(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+
+    post_channel_name = update.get_effective_message().text_message
+    post_channel = get_channel_by_name(post_channel_name)
+
+    dispatcher.set_conversation_data(update, "post_channel_id", post_channel.id)
+    text_message = TextMessage(ReadyMessage.enter_channel_name)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            TextFilter(), get_channel_name),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_channel_name(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+
+    channel_name = update.get_effective_message().text
+    dispatcher.set_conversation_data(update, "channel_name", channel_name)
+
+    text_message = TextMessage(ReadyMessage.enter_channel_nick_name)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            TextFilter(), get_channel_nick_name),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_channel_nick_name(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+
+    channel_nick_name = update.get_effective_message().text
+    dispatcher.set_conversation_data(update, "channel_nick_name", channel_nick_name)
+
+    text_message = TextMessage(ReadyMessage.enter_channel_description)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            TextFilter(), get_channel_description),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_channel_description(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+
+    channel_description = update.get_effective_message().text
+    dispatcher.set_conversation_data(update, "channel_description", channel_description)
+
+    general_message = TextMessage(ReadyMessage.choose_channel_category)
+    category_list = get_all_categories()
+    category_name_list = []
+    btn_list = []
+    for category in category_list:
+        category_name_list.append(category.name)
+        btn_list += [TemplateMessageButton(text=category.name, value=category.name, action=0)]
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            TemplateResponseFilter(keywords=category_name_list),
+                                                            get_channel_category),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_channel_category(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+
+    channel_category_name = update.get_effective_message().text_message
+    channel_category = get_category_by_name(channel_category_name)
+    dispatcher.set_conversation_data(update, "channel_category_id", channel_category.id)
+
+    text_message = TextMessage(ReadyMessage.upload_channel_log)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            PhotoFilter(), get_channel_logo),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_channel_logo(bot, update):
+    dispatcher.clear_conversation_data(update)
+    user_peer = update.get_effective_user()
+
+    channel_category_name = update.get_effective_message()
+    channel_category = get_category_by_name(channel_category_name)
+    dispatcher.set_conversation_data(update, "channel_category_id", channel_category.id)
+
+    text_message = TextMessage(ReadyMessage.upload_channel_log)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(
+                                                            PhotoFilter(), get_channel_description),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.info]))

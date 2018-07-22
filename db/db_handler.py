@@ -155,6 +155,14 @@ def insert_category(category):
         return False
 
 
+def get_all_channels():
+    return session.query(Channel).all()
+
+
+def get_channel_by_name(channel_name):
+    return session.query(Channel).filter(Channel.name == channel_name).one_or_none()
+
+
 def get_all_categories():
     return session.query(Category).all()
 
