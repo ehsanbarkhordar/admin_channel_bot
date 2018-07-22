@@ -20,6 +20,7 @@ class TMessage:
     send_content = "ارسال مطلب"
     get_new_content = "دریافت مطالب تازه فرستاده شده"
     get_archive_content = "دریافت مطالب آرشیو"
+    add_channel = "اضافه کردن کانال برای ارسال مطلب"
 
 
 class LogMessage:

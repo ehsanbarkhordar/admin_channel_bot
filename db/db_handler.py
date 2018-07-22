@@ -47,13 +47,14 @@ class Content(Base):
     channel_description = Column(Text, nullable=False)
     channel_nick_name = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
-    channel_logo_id = Column(Integer, ForeignKey('logo.id'))
+    channel_logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
+    post_for_channel_id = Column(Integer, ForeignKey('channel.id'), nullable=False)
 
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id, user_id,
-                 access_hash):
+    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id,
+                 post_for_channel_id, user_id, access_hash):
         self.channel_name = channel_name
         self.channel_description = channel_description
         self.channel_nick_name = channel_nick_name
@@ -61,12 +62,28 @@ class Content(Base):
         self.channel_logo_id = channel_logo_id
         self.user_id = user_id
         self.access_hash = access_hash
+        self.post_for_channel_id = post_for_channel_id
 
     def __repr__(self):
         return "<User(channel_name='%s',channel_description='%s',channel_nick_name='%s'" \
-               ",category_id='%s',channel_logo_id='%s',user_id='%i',access_hash='%s')>" % (
+               ",category_id='%s',channel_logo_id='%s',post_for_channel_id='%s',user_id='%i',access_hash='%s')>" % (
                    self.channel_name, self.channel_description, self.channel_nick_name, self.category_id,
-                   self.channel_logo_id, self.user_id, self.access_hash)
+                   self.channel_logo_id, self.post_for_channel_id, self.user_id, self.access_hash)
+
+
+class Channel(Base):
+    __tablename__ = 'channel'
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    channel_id = Column(Integer, nullable=False)
+    channel_access_hash = Column(String, nullable=False)
+    content = relationship("Content")
+
+    def __init__(self, name, channel_id, channel_access_hash, content):
+        self.name = name
+        self.channel_id = channel_id
+        self.channel_access_hash = channel_access_hash
+        self.content = content
 
 
 class Category(Base):
@@ -87,12 +104,23 @@ class Logo(Base):
     access_hash = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)
     thumb = Column(String)
+    content = relationship("Content")
 
     def __init__(self, file_id, access_hash, file_size, thumb):
         self.file_id = file_id
         self.access_hash = access_hash
         self.file_size = file_size
         self.thumb = thumb
+
+
+def insert_channel(channel):
+    try:
+        session.add(channel)
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
 
 
 def insert_content(content):

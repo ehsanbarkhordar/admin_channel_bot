@@ -52,6 +52,7 @@ def start_conversation(bot, update):
     if is_admin(user_id):
         btn_list = [
             TemplateMessageButton(text=TMessage.get_new_content, value=TMessage.get_new_content, action=0),
+            TemplateMessageButton(text=TMessage.add_channel, value=TMessage.add_channel, action=0),
             TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
             TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     else:
