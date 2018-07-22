@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from sqlalchemy import create_engine, ForeignKey
-from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger
+from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.dialects.postgresql import insert
@@ -49,7 +51,9 @@ class Content(Base):
     category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
     channel_logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     post_for_channel_id = Column(Integer, ForeignKey('channel.id'), nullable=False)
-
+    create_date = Column(DateTime, default=datetime.now())
+    is_publish = Column(Integer, default=0, nullable=False)
+    publish_date = Column(DateTime)
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
