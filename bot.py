@@ -1,11 +1,11 @@
 from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter
 from balebot.handlers import MessageHandler, CommandHandler
 from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, JsonMessage
+from db.db_handler import create_all_table, get_all_categories, get_category_by_name, get_logo_by_id
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
 from constant.message import ReadyMessage, TMessage, LogMessage, Regex
-# from db.db_handler import create_all_table, insert_user, get_user
 import asyncio
 
 updater = Updater(token=BotConfig.bot_token,
@@ -14,7 +14,7 @@ bot = updater.bot
 dispatcher = updater.dispatcher
 
 my_logger = Logger.logger
-# create_all_table()
+create_all_table()
 
 
 def success(response, user_data):
@@ -37,17 +37,26 @@ def failure(response, user_data):
         my_logger.error(LogMessage.max_fail_retried, extra={"tag": "error"})
 
 
+def is_admin(user_id):
+    for admin in BotConfig.admin_list:
+        if admin.get("user_id") == user_id:
+            return True
+    return False
+
+
 @dispatcher.message_handler(
     filters=[TemplateResponseFilter(keywords=[TMessage.start, TMessage.back]), TextFilter(keywords="start")])
 def start_conversation(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
+    if is_admin(user_id):
+        btn_list
     # admins=get_admins()
     # for user in update.users:
-        # for admin in admins:
-            # if user.get("username") admin.username:
-            #     pass
-                #insert user
+    # for admin in admins:
+    # if user.get("username") admin.username:
+    #     pass
+    # insert user
 
     general_message = TextMessage(ReadyMessage.start_conversation)
     btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
