@@ -1,8 +1,9 @@
 from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter, PhotoFilter
 from balebot.handlers import MessageHandler, CommandHandler
-from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, JsonMessage
+from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage
 from db.db_handler import create_all_table, get_all_categories, get_category_by_name, \
-    get_logo_by_id, get_all_channels, get_channel_by_name
+    get_all_channels, get_channel_by_name, insert_content, insert_logo, Logo, Content, \
+    get_logo_by_fileid_access_hash
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -228,20 +229,28 @@ def get_channel_category(bot, update):
 def get_channel_logo(bot, update):
     dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
-
-    channel_category_name = update.get_effective_message()
-    channel_category = get_category_by_name(channel_category_name)
-    dispatcher.set_conversation_data(update, "channel_category_id", channel_category.id)
-
+    user_id = user_peer.peer_id
+    access_hash = user_peer.access_hash
+    logo = update.get_effective_message()
+    logo_obj = Logo(file_id=logo.file_id, access_hash=logo.access_hash, file_size=logo.file_size, thumb=logo.thumb)
+    insert_logo(logo_obj)
+    logo = get_logo_by_fileid_access_hash(logo.file_id, logo.access_hash)
+    post_channel_id = dispatcher.get_conversation_data(update, "post_channel_id")
+    channel_name = dispatcher.get_conversation_data(update, "channel_name")
+    channel_nick_name = dispatcher.get_conversation_data(update, "channel_nick_name")
+    channel_description = dispatcher.get_conversation_data(update, "channel_description")
+    channel_category_id = dispatcher.get_conversation_data(update, "channel_category_id")
+    content_obj = Content(channel_name=channel_name, channel_description=channel_description,
+                          channel_nick_name=channel_nick_name,
+                          category_id=channel_category_id, channel_logo_id=logo.id,
+                          post_for_channel_id=post_channel_id,
+                          user_id=user_id, access_hash=access_hash)
+    insert_content(content_obj)
     text_message = TextMessage(ReadyMessage.upload_channel_log)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        MessageHandler(
-                                                            PhotoFilter(), get_channel_description),
-                                                        MessageHandler(DefaultFilter(), start_conversation)])
+    dispatcher.finish_conversation(update)
 
 
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.info]))

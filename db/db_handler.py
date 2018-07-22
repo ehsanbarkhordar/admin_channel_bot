@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine, ForeignKey
-from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text
+from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.dialects.postgresql import insert
@@ -100,7 +100,7 @@ class Category(Base):
 class Logo(Base):
     __tablename__ = 'logo'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    file_id = Column(Integer, nullable=False)
+    file_id = Column(BigInteger, nullable=False)
     access_hash = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)
     thumb = Column(String)
@@ -136,10 +136,8 @@ def insert_content(content):
 def insert_logo(logo):
     try:
         session.add(logo)
-        session.flush(logo)
-        logo_id = logo.id
         session.commit()
-        return logo_id
+        return True
     except ValueError:
         print(ValueError)
         return False
@@ -171,8 +169,8 @@ def get_category_by_name(category_name):
     return session.query(Category).filter(Category.name == category_name).one_or_none()
 
 
-def get_logo_by_id(logo_id):
-    return session.query(Logo).filter(Logo.id == logo_id).one_or_none()
+def get_logo_by_fileid_access_hash(file_id, access_hash):
+    return session.query(Logo).filter(Logo.file_id == file_id, Logo.access_hash == access_hash).one_or_none()
 # def insert_user(name, user_id, access_hash):
 #     insert_stmt = insert(User).values(user_id=user_id, access_hash=access_hash)
 #     on_update_stmt = insert_stmt.on_conflict_do_update(
