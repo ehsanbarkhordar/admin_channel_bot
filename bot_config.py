@@ -14,4 +14,5 @@ class BotConfig:
     bot_token = os.environ.get('TOKEN', None) or "386f13d7a666aece40fc1c6612a85b63aead250f"
     bot_user_id = os.environ.get('USER_ID', None) or "41"
 
-    admin_list = [{"user_id": "", "access_hash": ""}, {"user_id": "", "access_hash": ""}]
+    admin_list = [{"user_id": "1428351868", "access_hash": "-2295479097333507622"},
+                  {"user_id": "2", "access_hash": "2"}]

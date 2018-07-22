@@ -18,6 +18,8 @@ class TMessage:
     info = "راهنما"
     back = "بازگشت به منو اصلی"
     send_content = "ارسال مطلب"
+    get_new_content = "دریافت مطالب تازه فرستاده شده"
+    get_archive_content = "دریافت مطالب آرشیو"
 
 
 class LogMessage:

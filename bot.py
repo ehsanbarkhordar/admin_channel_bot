@@ -50,18 +50,14 @@ def start_conversation(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     if is_admin(user_id):
-        btn_list
-    # admins=get_admins()
-    # for user in update.users:
-    # for admin in admins:
-    # if user.get("username") admin.username:
-    #     pass
-    # insert user
-
+        btn_list = [
+            TemplateMessageButton(text=TMessage.get_new_content, value=TMessage.get_new_content, action=0),
+            TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
+            TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
+    else:
+        btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
+                    TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
-    btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
-                TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
-
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
