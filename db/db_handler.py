@@ -5,6 +5,8 @@ from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.dialects.postgresql import insert
+
+from bot_config import BotConfig
 from db.db_config import DatabaseConfig
 from balebot.utils.logger import Logger
 
@@ -115,6 +117,21 @@ class Logo(Base):
         self.access_hash = access_hash
         self.file_size = file_size
         self.thumb = thumb
+
+
+def change_publish_status(content_id, status_code):
+    content = session.query(Content).filter(Content.id == content_id).one_or_none()
+    try:
+        content.is_publish = status_code
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
+def get_unpublished_content():
+    return session.query(Content).filter(Content.is_publish != 1).limit(BotConfig.rows_per_query).all()
 
 
 def insert_channel(channel):
