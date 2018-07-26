@@ -4,7 +4,7 @@ from balebot.models.messages import TemplateMessageButton, TextMessage, Template
 from db.db_handler import create_all_table, get_all_categories, get_category_by_name, \
     insert_content, insert_logo, Logo, Content, \
     get_logo_by_fileid_access_hash, insert_category, Category, get_unpublished_content, get_category_by_id, \
-    get_logo_by_id, change_publish_status
+    get_logo_by_id, change_publish_status, change_description
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -136,6 +136,7 @@ def add_or_reject_content(bot, update):
     message = message.split("-")
     action = message[0]
     content_id = message[1]
+    dispatcher.set_conversation_data(update, "content_id", content_id)
     if action == TMessage.accept:
         change_publish_status(content_id, "1")
         text_message = TextMessage(ReadyMessage.accept_content)
@@ -145,21 +146,41 @@ def add_or_reject_content(bot, update):
         my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     elif action == TMessage.reject:
         change_publish_status(content_id, "-1")
-        text_message = TextMessage(ReadyMessage.enter_category_name)
+        text_message = TextMessage(ReadyMessage.reject_content)
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
         my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     elif action == TMessage.accept_with_edit:
         change_publish_status(content_id, "2")
-        text_message = TextMessage(ReadyMessage.enter_category_name)
+        text_message = TextMessage(ReadyMessage.replace_description)
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
         my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
-                                                        MessageHandler(TextFilter(), add_or_reject_content),
+                                                        MessageHandler(TextFilter(), replace_description),
+
+                                                        MessageHandler(TemplateResponseFilter(), add_or_reject_content),
+                                                        MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def replace_description(bot, update):
+    user_peer = update.get_effective_user()
+    user_id = user_peer.peer_id
+    new_description = update.get_effective_message().text
+    content_id = dispatcher.get_conversation_data(update, "content_id")
+    change_description(content_id, new_description)
+    change_publish_status(content_id, "1")
+    text_message = TextMessage(ReadyMessage.replace_description_success_fully)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                     kwargs=kwargs)
+    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
+    dispatcher.register_conversation_next_step_handler(update,
+                                                       [CommandHandler("start", start_conversation),
+                                                        MessageHandler(TemplateResponseFilter(), add_or_reject_content),
                                                         MessageHandler(DefaultFilter(), start_conversation)])
 
 

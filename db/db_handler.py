@@ -128,6 +128,17 @@ def change_publish_status(content_id, status_code):
         return False
 
 
+def change_description(content_id, description):
+    content = session.query(Content).filter(Content.id == content_id).one_or_none()
+    try:
+        content.channel_description = description
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
 def get_unpublished_content():
     return session.query(Content).filter(Content.is_publish != 1).order_by(Content.create_date).limit(
         BotConfig.rows_per_query).all()
