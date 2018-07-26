@@ -2,7 +2,7 @@ import os
 
 
 class BotConfig:
-    rows_per_query = int(os.environ.get('ROWS_PER_QUERY', None) or 50)
+    rows_per_query = int(os.environ.get('ROWS_PER_QUERY', None) or 3)
     max_retries = int(os.environ.get('MAX_RETRIES', None) or 3)
     check_interval = float(os.environ.get('CHECK_INTERVAL', None) or 0.5)
     time_sleep = float(os.environ.get('TIME_SLEEP', None) or 0.5)
@@ -15,5 +15,6 @@ class BotConfig:
     bot_user_id = os.environ.get('USER_ID', None) or "41"
 
     admin_list = [{"user_id": "1428351868", "access_hash": "-2295479097333507622"},
-                  {"user_id": "201707397", "access_hash": "-2163233886830599507"}]
+                  {"user_id": "201707397", "access_hash": "-2163233886830599507"},
+                  {"user_id": "762342807", "access_hash": "-1703674591054484462"}]
     channel = {"name": "کانال تستی", "channel_id": "24335167", "channel_access_hash": "1766074642907138471"}

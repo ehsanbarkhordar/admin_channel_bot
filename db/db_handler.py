@@ -58,7 +58,8 @@ class Content(Base):
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id, user_id, access_hash):
+    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id, user_id,
+                 access_hash):
         self.channel_name = channel_name
         self.channel_description = channel_description
         self.channel_nick_name = channel_nick_name
@@ -68,10 +69,11 @@ class Content(Base):
         self.access_hash = access_hash
 
     def __repr__(self):
-        return "<User(channel_name='%s',channel_description='%s',channel_nick_name='%s'" \
+        return "<Content(channel_name='%s',channel_description='%s',channel_nick_name='%s'" \
                ",category_id='%s',channel_logo_id='%s',user_id='%i',access_hash='%s')>" % (
                    self.channel_name, self.channel_description, self.channel_nick_name, self.category_id,
                    self.channel_logo_id, self.user_id, self.access_hash)
+
 
 #
 # class Channel(Base):
@@ -127,7 +129,8 @@ def change_publish_status(content_id, status_code):
 
 
 def get_unpublished_content():
-    return session.query(Content).filter(Content.is_publish != 1).limit(BotConfig.rows_per_query).all()
+    return session.query(Content).filter(Content.is_publish != 1).order_by(Content.create_date).limit(
+        BotConfig.rows_per_query).all()
 
 
 # def insert_channel(channel):
@@ -169,6 +172,7 @@ def insert_category(category):
         print(ValueError)
         return False
 
+
 #
 # def get_all_channels():
 #     return session.query(Channel).all()
@@ -186,8 +190,16 @@ def get_category_by_name(category_name):
     return session.query(Category).filter(Category.name == category_name).one_or_none()
 
 
+def get_category_by_id(category_id):
+    return session.query(Category).filter(Category.id == category_id).one_or_none()
+
+
 def get_logo_by_fileid_access_hash(file_id, access_hash):
     return session.query(Logo).filter(Logo.file_id == file_id, Logo.access_hash == access_hash).one_or_none()
+
+
+def get_logo_by_id(logo_id):
+    return session.query(Logo).filter(Logo.id == logo_id).one_or_none()
 # def insert_user(name, user_id, access_hash):
 #     insert_stmt = insert(User).values(user_id=user_id, access_hash=access_hash)
 #     on_update_stmt = insert_stmt.on_conflict_do_update(
