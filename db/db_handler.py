@@ -52,15 +52,13 @@ class Content(Base):
     channel_nick_name = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
     channel_logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
-    post_for_channel_id = Column(Integer, ForeignKey('channel.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
     is_publish = Column(Integer, default=0, nullable=False)
     publish_date = Column(DateTime)
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id,
-                 post_for_channel_id, user_id, access_hash):
+    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id, user_id, access_hash):
         self.channel_name = channel_name
         self.channel_description = channel_description
         self.channel_nick_name = channel_nick_name
@@ -68,28 +66,27 @@ class Content(Base):
         self.channel_logo_id = channel_logo_id
         self.user_id = user_id
         self.access_hash = access_hash
-        self.post_for_channel_id = post_for_channel_id
 
     def __repr__(self):
         return "<User(channel_name='%s',channel_description='%s',channel_nick_name='%s'" \
-               ",category_id='%s',channel_logo_id='%s',post_for_channel_id='%s',user_id='%i',access_hash='%s')>" % (
+               ",category_id='%s',channel_logo_id='%s',user_id='%i',access_hash='%s')>" % (
                    self.channel_name, self.channel_description, self.channel_nick_name, self.category_id,
-                   self.channel_logo_id, self.post_for_channel_id, self.user_id, self.access_hash)
+                   self.channel_logo_id, self.user_id, self.access_hash)
 
-
-class Channel(Base):
-    __tablename__ = 'channel'
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = Column(String, nullable=False)
-    channel_id = Column(Integer, nullable=False)
-    channel_access_hash = Column(String, nullable=False)
-    content = relationship("Content")
-
-    def __init__(self, name, channel_id, channel_access_hash, content):
-        self.name = name
-        self.channel_id = channel_id
-        self.channel_access_hash = channel_access_hash
-        self.content = content
+#
+# class Channel(Base):
+#     __tablename__ = 'channel'
+#     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+#     name = Column(String, nullable=False)
+#     channel_id = Column(Integer, nullable=False)
+#     channel_access_hash = Column(String, nullable=False)
+#     content = relationship("Content")
+#
+#     def __init__(self, name, channel_id, channel_access_hash, content):
+#         self.name = name
+#         self.channel_id = channel_id
+#         self.channel_access_hash = channel_access_hash
+#         self.content = content
 
 
 class Category(Base):
@@ -98,9 +95,8 @@ class Category(Base):
     name = Column(String, nullable=False)
     content = relationship("Content")
 
-    def __init__(self, name, content):
+    def __init__(self, name):
         self.name = name
-        self.content = content
 
 
 class Logo(Base):
@@ -134,14 +130,14 @@ def get_unpublished_content():
     return session.query(Content).filter(Content.is_publish != 1).limit(BotConfig.rows_per_query).all()
 
 
-def insert_channel(channel):
-    try:
-        session.add(channel)
-        session.commit()
-        return True
-    except ValueError:
-        print(ValueError)
-        return False
+# def insert_channel(channel):
+#     try:
+#         session.add(channel)
+#         session.commit()
+#         return True
+#     except ValueError:
+#         print(ValueError)
+#         return False
 
 
 def insert_content(content):
@@ -173,14 +169,14 @@ def insert_category(category):
         print(ValueError)
         return False
 
+#
+# def get_all_channels():
+#     return session.query(Channel).all()
+#
 
-def get_all_channels():
-    return session.query(Channel).all()
-
-
-def get_channel_by_name(channel_name):
-    return session.query(Channel).filter(Channel.name == channel_name).one_or_none()
-
+# def get_channel_by_name(channel_name):
+#     return session.query(Channel).filter(Channel.name == channel_name).one_or_none()
+#
 
 def get_all_categories():
     return session.query(Category).all()

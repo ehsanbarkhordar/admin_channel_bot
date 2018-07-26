@@ -15,4 +15,5 @@ class BotConfig:
     bot_user_id = os.environ.get('USER_ID', None) or "41"
 
     admin_list = [{"user_id": "1428351868", "access_hash": "-2295479097333507622"},
-                  {"user_id": "2", "access_hash": "2"}]
+                  {"user_id": "201707397", "access_hash": "-2163233886830599507"}]
+    channel = {"name": "کانال تستی", "channel_id": "24335167", "channel_access_hash": "1766074642907138471"}
