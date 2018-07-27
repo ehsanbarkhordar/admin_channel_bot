@@ -211,6 +211,11 @@ def get_logo_by_fileid_access_hash(file_id, access_hash):
 
 def get_logo_by_id(logo_id):
     return session.query(Logo).filter(Logo.id == logo_id).one_or_none()
+
+
+def get_content_by_id(content_id):
+    return session.query(Content).filter(Content.id == content_id).one_or_none()
+
 # def insert_user(name, user_id, access_hash):
 #     insert_stmt = insert(User).values(user_id=user_id, access_hash=access_hash)
 #     on_update_stmt = insert_stmt.on_conflict_do_update(

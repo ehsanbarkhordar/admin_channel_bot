@@ -4,7 +4,7 @@ from balebot.models.messages import TemplateMessageButton, TextMessage, Template
 from db.db_handler import create_all_table, get_all_categories, get_category_by_name, \
     insert_content, insert_logo, Logo, Content, \
     get_logo_by_fileid_access_hash, insert_category, Category, get_unpublished_content, get_category_by_id, \
-    get_logo_by_id, change_publish_status, change_description
+    get_logo_by_id, change_publish_status, change_description, get_content_by_id
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -105,6 +105,12 @@ def get_sent_content(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     unpublished_content = get_unpublished_content()
+    if not unpublished_content:
+        text_message = TextMessage(ReadyMessage.no_new_content_recently)
+        kwargs = {"update": update, "message": text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(text_message, user_peer, success_callback=start_again, failure_callback=failure,
+                         kwargs=kwargs)
+        return 0
     for content in unpublished_content:
         btn_list = [
             TemplateMessageButton(text=TMessage.accept, value=TMessage.accept + "-" + str(content.id), action=0),
@@ -137,9 +143,10 @@ def add_or_reject_content(bot, update):
     action = message[0]
     content_id = message[1]
     dispatcher.set_conversation_data(update, "content_id", content_id)
+    content = get_content_by_id(content_id)
     if action == TMessage.accept:
         change_publish_status(content_id, "1")
-        text_message = TextMessage(ReadyMessage.accept_content)
+        text_message = TextMessage(ReadyMessage.accept_content.format(content.channel_name, content.channel_nick_name))
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
@@ -210,7 +217,7 @@ def add_category(bot, update):
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
         return 0
-    text_message = TextMessage(ReadyMessage.category_added_successfully)
+    text_message = TextMessage(ReadyMessage.category_added_successfully.format(category_name))
     kwargs = {"update": update, "message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=start_again, failure_callback=failure,
                      kwargs=kwargs)
