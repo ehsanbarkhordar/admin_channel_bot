@@ -60,18 +60,17 @@ class MessageSender:
                                               )
                 else:
                     self.check_next = True
-
             else:
                 self.logger.debug("db connected: {}".format("ff", extra={"tag": "info"}))
                 self.logger.debug(
                     "network connected: {}".format("dfd", extra={"tag": "info"}))
                 self.logger.debug("check_next: {}".format(self.check_next), extra={"tag": "info"})
 
-                self.perform_check_failure_counter += 1
-                if self.perform_check_failure_counter > BotConfig.max_perform_check_failure:
-                    self.perform_check_failure_counter = 0
-                    self.logger.error("Err", extra={"tag": "err"})
-                    quit(1)
+                # self.perform_check_failure_counter += 1
+                # if self.perform_check_failure_counter > BotConfig.max_perform_check_failure:
+                #     self.perform_check_failure_counter = 0
+                #     self.logger.error("Err", extra={"tag": "err"})
+                #     quit(1)
 
             self.async_loop.call_later(BotConfig.check_interval, self.check)
 

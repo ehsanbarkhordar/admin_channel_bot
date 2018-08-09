@@ -26,7 +26,7 @@ post_sender.start()
 post_sender.bot = bot
 post_sender.updater = updater
 post_sender.dispatcher = dispatcher
-post_sender.logger=my_logger
+post_sender.logger = my_logger
 
 
 def success(response, user_data):
@@ -60,13 +60,12 @@ def failure(response, user_data):
 def is_admin(user_id):
     user_id = str(user_id)
     for admin in BotConfig.admin_list:
-        a = admin.get("user_id")
-        aa = user_id
         if admin.get("user_id") == user_id:
             return True
     return False
 
 
+# ============================================== Start Conversation ===================================================
 @dispatcher.message_handler(
     filters=[TemplateResponseFilter(keywords=[TMessage.start, TMessage.back]), TextFilter(keywords="start")])
 def start_conversation(bot, update):
@@ -78,9 +77,12 @@ def start_conversation(bot, update):
         user_panel(bot, update)
 
 
+# ============================================== Admin Panel ===================================================
 def admin_panel(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
     btn_list = [
         TemplateMessageButton(text=TMessage.get_sent_content, value=TMessage.get_sent_content, action=0),
         TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
@@ -92,27 +94,15 @@ def admin_panel(bot, update):
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
     my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        CommandHandler("info", info),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.send_content),
-                                                            send_content),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.add_category),
-                                                            get_category_name),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.get_sent_content),
-                                                            get_sent_content),
-                                                        MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.info),
-                                                            info)
-                                                        ])
+    dispatcher.finish_conversation(update)
 
 
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def get_sent_content(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
     unpublished_content = get_unpublished_content()
     if not unpublished_content:
         text_message = TextMessage(ReadyMessage.no_new_content_recently)
@@ -126,7 +116,9 @@ def get_sent_content(bot, update):
             TemplateMessageButton(text=TMessage.reject, value=TMessage.reject + "-" + str(content.id), action=0)]
         category = get_category_by_id(content.category_id)
         logo = get_logo_by_id(content.channel_logo_id)
-
+        text_message = TextMessage(
+            ReadyMessage.request_content_text.format(content.channel_name, content.channel_nick_name,
+                                                     content.channel_description, category.name))
         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
                                      250, file_storage_version=1, caption_text=text_message)
 
@@ -141,6 +133,7 @@ def get_sent_content(bot, update):
                                                         MessageHandler(DefaultFilter(), start_conversation)])
 
 
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def add_or_reject_content(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -179,6 +172,7 @@ def add_or_reject_content(bot, update):
                                                         MessageHandler(DefaultFilter(), start_conversation)])
 
 
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def replace_description(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -197,6 +191,7 @@ def replace_description(bot, update):
                                                         MessageHandler(DefaultFilter(), start_conversation)])
 
 
+# ============================================== Add Category ===================================================
 def get_category_name(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -231,6 +226,7 @@ def add_category(bot, update):
     dispatcher.finish_conversation(update)
 
 
+# ============================================== User Panel ===================================================
 def user_panel(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -366,6 +362,7 @@ def get_channel_logo(bot, update):
     dispatcher.finish_conversation(update)
 
 
+# ============================================== Info ===================================================
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.info]))
 def info(bot, update):
     user_peer = update.get_effective_user()
