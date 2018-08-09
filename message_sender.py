@@ -32,9 +32,9 @@ class MessageSender:
 
     def check(self):
         if self.running:
-            if self.check_next \
-                    and datetime.now().time() > BotConfig.start_publish_date \
-                    and datetime.now().time() < BotConfig.end_publish_date \
+            now = datetime.now().time()
+            now_hour = now.hour
+            if self.check_next and BotConfig.stop_publish_hour >= now_hour >= BotConfig.start_publish_hour \
                     and self.database_handler.connect() and self.updater.network_connected():
                 self.check_next = False
                 stmt = get_accept_content()
@@ -44,7 +44,7 @@ class MessageSender:
                         self.check_next = True
 
                     def send_message(id_index, loop):
-                        if id_index > len(rows):
+                        if id_index >= len(rows):
                             self.check_next = True
                             return 0
                         row = rows[id_index]
@@ -56,9 +56,7 @@ class MessageSender:
                                                                                             category.name))
                         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size,
                                                      "image/jpeg", None, 250,
-                                                     250, file_storage_version=1,
-                                                     caption_text=text_message)
-
+                                                     250, file_storage_version=1, caption_text=text_message)
                         user_peer = Peer(PeerType.group, peer_id=BotConfig.channel.get("channel_id"),
                                          access_hash=BotConfig.channel.get("channel_access_hash"))
                         kwargs = {"message": text_message, "content_id": row.id, "user_peer": user_peer, "try_times": 1}
@@ -98,6 +96,7 @@ class MessageSender:
 
     def failure_sent_message(self, response, user_data):
         user_data = user_data['kwargs']
+        print(response, user_data)
         user_peer = user_data["user_peer"]
         content_id = user_data["content_id"]
         try_times = int(user_data["try_times"])
@@ -105,7 +104,7 @@ class MessageSender:
         if try_times < BotConfig.max_total_send_failure:
             try_times += 1
             self.logger.error(LogMessage.fail_send_message, extra={"user_id": user_peer.peer_id, "tag": "error"})
-            kwargs = {"message": message, "user_peer": user_peer, "try_times": try_times}
+            kwargs = {"message": message, "content_id": content_id, "user_peer": user_peer, "try_times": try_times}
             self.bot.send_message(message, user_peer, success_callback=self.success_sent_message,
                                   failure_callback=self.failure_sent_message, kwargs=kwargs)
         else:

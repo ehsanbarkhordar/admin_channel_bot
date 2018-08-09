@@ -25,11 +25,11 @@ my_logger = Logger.logger
 create_all_table()
 
 post_sender = MessageSender()
-post_sender.start()
 post_sender.bot = bot
 post_sender.updater = updater
 post_sender.dispatcher = dispatcher
 post_sender.logger = my_logger
+post_sender.start()
 
 
 def success(response, user_data):

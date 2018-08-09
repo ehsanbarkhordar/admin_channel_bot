@@ -16,10 +16,12 @@ class BotConfig:
     bot_user_id = os.environ.get('USER_ID', None) or "41"
 
     send_delay = float(os.environ.get('SEND_DELAY', None) or 2)
-    start_publish_hour = os.environ.get('START_PUBLISH_HOUR', None) or "6:00PM"
-    start_publish_date = datetime.strptime(start_publish_hour, '%I:%M%p')
-    end_publish_hour = os.environ.get('END_PUBLISH_HOUR', None) or "8:00PM"
-    end_publish_date = datetime.strptime(end_publish_hour, '%I:%M%p')
+    start_publish_hour = int(os.environ.get('START_PUBLISH_HOUR', None) or "18")
+    stop_publish_hour = start_publish_hour + 2
+
+    # start_publish_date = datetime.strptime(start_publish_hour, '%I:%M%p')
+    # end_publish_hour = os.environ.get('END_PUBLISH_HOUR', None) or "8:00PM"
+    # end_publish_date = datetime.strptime(end_publish_hour, '%I:%M%p')
 
     admin_list = [{"user_id": "1428351868", "access_hash": "-2295479097333507622"},
                   {"user_id": "201707397", "access_hash": "-2163233886830599507"},
