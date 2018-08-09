@@ -1,0 +1,49 @@
+version: '3.0'
+services:
+  pg_admin_channel_bot: #pg_botname_with_underline_bot
+    image: postgres:9.5
+    container_name: s # same as service name
+    restart: always 
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123456
+      - POSTGRES_DB=my_db
+      - TZ=Asia/Tehran
+    volumes:
+      - /home/elenoon/docker/volumes/pg_admin_channel_bot/postgres/:/var/lib/postgresql/data/
+
+  admin_channel_bot: # botname_bot
+    image: registry.bale.ai:2443/admin_channel:0.1.0
+    container_name: admin_channel_bot #same as service name
+    environment:
+    #   PostgreSQL Config
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123456
+      - POSTGRES_DB=my_db
+      - POSTGRES_HOST=pg_admin_channel_bot
+      - POSTGRES_PORT=5432
+    #   Config
+      - BASE_URL=wss://api.bale.ai/v1/bots/
+      - TOKEN=cc9eb7440a4f03a9f6d6c63352c8a18c0e158c33
+      - CHECK_INTERVAL=0.5
+      - ROWS_PER_QUERY=3
+      - SEND_DELAY=2
+      - START_PUBLISH_HOUR=18
+      - STOP_AFTER=1
+      - LIMIT_SHOW_LOCATIONS=3
+      - TIME_OUT_WAIT_FOR_CHECK_CHECK_CLIENT_QUEUE=60
+      - TIME_OUT_FOR_BLOCK_ON_CLIENT_QUEUE=0.5
+      - TIME_OUT_FOR_BLOCK_ON_CLIENT_QUEUE=5
+    #   Log config
+      - USE_GRAYLOG=2
+      - SOURCE=admin_channel_bot_source
+      - GRAYLOG_HOST=prd-graylog-001.c002.obale.ir
+      - GRAYLOG_PORT=12201
+      - LOG_LEVEL=10
+      - LOG_FACILITY_NAME=admin_channel_bot_facility
+      - MONITORING_HASH=cabb3f498ac5a037f669f658f1be08c3
+    depends_on:
+     - pg_admin_channel_bot
+    restart: always # use always 
+
+    # no need for links in version 3 docker-compose
