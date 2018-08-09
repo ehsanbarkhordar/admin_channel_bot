@@ -1,0 +1,10 @@
+aiohttp==2.3.10
+async-timeout==2.0.1
+chardet==3.0.4
+graypy==0.3
+idna==2.7
+idna-ssl==1.1.0
+multidict==4.3.1
+psycopg2-binary==2.7.5
+SQLAlchemy==1.2.10
+yarl==1.2.0
