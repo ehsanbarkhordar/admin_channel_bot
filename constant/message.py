@@ -16,13 +16,14 @@ class ReadyMessage:
                            "توضیحات کانال: {}\n" \
                            "دسته کانال: {}\n"
     accept_content = "کانال {} با آیدی {} پذیرفته شد."
-    accept_content_successfully = "درخواست درج کانال شما برای معرفی در کانال منتخبین پذیرفته شد."
+    accept_content_client = "تبریک!\nدرخواست درج کانال {} با آیدی {} برای معرفی در کانال منتخبین پذیرفته شد."
     reject_content = "کانال {} با آیدی {} رد شد."
-    reject_content_successfully = "متاسفانه، درخواست درج کانال شما برای معرفی در کانال منتخبین پذیرفته نشد."
-    accept_content_with_edit_successfully = "درخواست درج کانال شما با شرط اصلاح برای معرفی در کانال منتخبین پذیرفته شد."
+    reject_content_client = "متأسفیم!\nدرخواست درج کانال {} با آیدی {} برای معرفی در کانال منتخبین پذیرفته نشد."
+    accept_content_with_edit_client = "تبریک!\nدرخواست درج کانال {} با آیدی {} با شرط اصلاح برای معرفی در کانال منتخبین پذیرفته شد."
     replace_description = "متن جایگزین توضیحات کانال {} با آیدی {} را وارد نمایید."
     replace_description_success_fully = "متن توضیحات کانال با موفقیت تغییر یافت. و کانال اکسپت شد."
     no_new_content_recently = "هیچ درخواست جدیدی یافت نشد!"
+    channel_sent_before = "این کانال قبلا فرستاده شده است."
     # ---------------------------------------------------------------------------------------------------------
     error = "*خطایی رخ داده است. *" \
             " لطفا دوباره امتحان کنید."
@@ -49,7 +50,7 @@ class TMessage:
 class LogMessage:
     start = "conversation started"
     success_send_message = "success send message"
-    fail_send_message = "success send message"
+    fail_send_message = "failed send message"
     max_fail_retried = "max fails retried"
     invalid_game = "invalid game"
     edit_name = "edit name started"

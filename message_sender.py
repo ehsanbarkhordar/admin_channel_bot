@@ -1,15 +1,13 @@
-# import ibm_db
 import asyncio
-import traceback
 from datetime import datetime
 
 from balebot.models.base_models import Peer
 from balebot.models.constants.peer_type import PeerType
-from balebot.models.messages import TextMessage, TemplateMessage, TemplateMessageButton, PhotoMessage
+from balebot.models.messages import TextMessage, PhotoMessage
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
 from constant.message import ReadyMessage, LogMessage
-from db.db_handler import db, get_unpublished_content, get_accept_content, get_category_by_id, get_logo_by_id, \
+from db.db_handler import db, get_accept_content, get_category_by_id, get_logo_by_id, \
     change_is_sent
 
 
@@ -96,7 +94,6 @@ class MessageSender:
 
     def failure_sent_message(self, response, user_data):
         user_data = user_data['kwargs']
-        print(response, user_data)
         user_peer = user_data["user_peer"]
         content_id = user_data["content_id"]
         try_times = int(user_data["try_times"])

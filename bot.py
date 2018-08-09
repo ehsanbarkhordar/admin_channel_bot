@@ -2,6 +2,8 @@ import re
 
 from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter, PhotoFilter
 from balebot.handlers import MessageHandler, CommandHandler
+from balebot.models.base_models import Peer
+from balebot.models.constants.peer_type import PeerType
 from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, PhotoMessage
 from db.db_handler import create_all_table, get_all_categories, get_category_by_name, \
     insert_content, insert_logo, Logo, Content, \
@@ -151,11 +153,23 @@ def add_or_reject_content(bot, update):
     content_id = arabic_to_eng_number(content_id)
     dispatcher.set_conversation_data(update, "content_id", content_id)
     content = get_content_by_id(content_id)
+    if content.is_sent != 0:
+        text_message = TextMessage(ReadyMessage.channel_sent_before)
+        kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        return 0
+    client_peer = Peer(PeerType.user, peer_id=content.user_id, access_hash=content.access_hash)
     if action == TMessage.accept:
         change_publish_status(content_id, "1")
         text_message = TextMessage(ReadyMessage.accept_content.format(content.channel_name, content.channel_nick_name))
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        client_text_message = TextMessage(
+            ReadyMessage.accept_content_client.format(content.channel_name, content.channel_nick_name))
+        kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
     elif action == TMessage.reject:
         change_publish_status(content_id, "-1")
@@ -163,12 +177,22 @@ def add_or_reject_content(bot, update):
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
+        client_text_message = TextMessage(
+            ReadyMessage.reject_content_client.format(content.channel_name, content.channel_nick_name))
+        kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
     elif action == TMessage.accept_with_edit:
         change_publish_status(content_id, "2")
         text_message = TextMessage(
             ReadyMessage.replace_description.format(content.channel_name, content.channel_nick_name))
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        client_text_message = TextMessage(
+            ReadyMessage.accept_content_with_edit_client.format(content.channel_name, content.channel_nick_name))
+        kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),

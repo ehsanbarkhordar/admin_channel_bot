@@ -17,7 +17,7 @@ class BotConfig:
 
     send_delay = float(os.environ.get('SEND_DELAY', None) or 2)
     start_publish_hour = int(os.environ.get('START_PUBLISH_HOUR', None) or "18")
-    stop_publish_hour = start_publish_hour + 2
+    stop_publish_hour = start_publish_hour + 1
 
     # start_publish_date = datetime.strptime(start_publish_hour, '%I:%M%p')
     # end_publish_hour = os.environ.get('END_PUBLISH_HOUR', None) or "8:00PM"
