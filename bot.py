@@ -1,3 +1,5 @@
+import re
+
 from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, LocationFilter, PhotoFilter
 from balebot.handlers import MessageHandler, CommandHandler
 from balebot.models.messages import TemplateMessageButton, TextMessage, TemplateMessage, PhotoMessage
@@ -12,6 +14,7 @@ from constant.message import ReadyMessage, TMessage, LogMessage, Regex
 import asyncio
 
 from message_sender import MessageSender
+from utils.utils import eng_to_arabic_number, arabic_to_eng_number
 
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
@@ -111,8 +114,13 @@ def get_sent_content(bot, update):
         return 0
     for content in unpublished_content:
         btn_list = [
-            TemplateMessageButton(text=TMessage.accept, value=TMessage.accept + "-" + str(content.id), action=0),
-            TemplateMessageButton(text=TMessage.reject, value=TMessage.reject + "-" + str(content.id), action=0)]
+            TemplateMessageButton(text=TMessage.accept,
+                                  value=TMessage.accept + " - " + eng_to_arabic_number(content.id), action=0),
+            TemplateMessageButton(text=TMessage.reject,
+                                  value=TMessage.reject + " - " + eng_to_arabic_number(content.id), action=0),
+            TemplateMessageButton(text=TMessage.accept_with_edit,
+                                  value=TMessage.accept_with_edit + " - " + eng_to_arabic_number(content.id),
+                                  action=0)]
         category = get_category_by_id(content.category_id)
         logo = get_logo_by_id(content.channel_logo_id)
         text_message = TextMessage(
@@ -128,13 +136,19 @@ def get_sent_content(bot, update):
     dispatcher.finish_conversation(update)
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[ReadyMessage.accept_content.format()]))
+@dispatcher.message_handler(
+    TemplateResponseFilter(keywords=[TMessage.accept, TMessage.reject, TMessage.accept_with_edit]))
 def add_or_reject_content(bot, update):
     user_peer = update.get_effective_user()
-    message = update.get_effective_message().text_message
-    message = message.split("-")
+    message_text = update.get_effective_message().text_message
+    message = message_text.split("-")
     action = message[0]
+    action = action.rstrip()
+    action = action.lstrip()
     content_id = message[1]
+    content_id = content_id.rstrip()
+    content_id = content_id.lstrip()
+    content_id = arabic_to_eng_number(content_id)
     dispatcher.set_conversation_data(update, "content_id", content_id)
     content = get_content_by_id(content_id)
     if action == TMessage.accept:
@@ -145,25 +159,27 @@ def add_or_reject_content(bot, update):
                          kwargs=kwargs)
     elif action == TMessage.reject:
         change_publish_status(content_id, "-1")
-        text_message = TextMessage(ReadyMessage.reject_content)
+        text_message = TextMessage(ReadyMessage.reject_content.format(content.channel_name, content.channel_nick_name))
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
     elif action == TMessage.accept_with_edit:
         change_publish_status(content_id, "2")
-        text_message = TextMessage(ReadyMessage.replace_description)
+        text_message = TextMessage(
+            ReadyMessage.replace_description.format(content.channel_name, content.channel_nick_name))
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         MessageHandler(TextFilter(), replace_description),
-
-                                                        MessageHandler(TemplateResponseFilter(), add_or_reject_content),
+                                                        MessageHandler(TemplateResponseFilter(
+                                                            keywords=[TMessage.accept, TMessage.reject,
+                                                                      TMessage.accept_with_edit]),
+                                                            add_or_reject_content),
                                                         MessageHandler(DefaultFilter(), start_conversation)])
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def replace_description(bot, update):
     user_peer = update.get_effective_user()
     new_description = update.get_effective_message().text
@@ -174,10 +190,7 @@ def replace_description(bot, update):
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        MessageHandler(TemplateResponseFilter(), add_or_reject_content),
-                                                        MessageHandler(DefaultFilter(), start_conversation)])
+    dispatcher.finish_conversation(update)
 
 
 # ============================================== Add Category ===================================================

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import create_engine, ForeignKey
+from sqlalchemy import create_engine, ForeignKey, or_
 from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
@@ -53,7 +53,8 @@ class Content(Base):
     category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
     channel_logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
-    is_publish = Column(Integer, default=0, nullable=False)
+    allow_publish = Column(Integer, default=0, nullable=False)
+    is_sent = Column(Integer, default=0, nullable=False)
     publish_date = Column(DateTime)
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
@@ -120,7 +121,7 @@ class Logo(Base):
 def change_publish_status(content_id, status_code):
     content = session.query(Content).filter(Content.id == content_id).one_or_none()
     try:
-        content.is_publish = status_code
+        content.allow_publish = status_code
         session.commit()
         return True
     except ValueError:
@@ -139,13 +140,26 @@ def change_description(content_id, description):
         return False
 
 
+def change_is_sent(content_id, is_sent):
+    content = session.query(Content).filter(Content.id == content_id).one_or_none()
+    try:
+        content.is_sent = int(is_sent)
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
 def get_unpublished_content():
-    return session.query(Content).filter(Content.is_publish != 1).order_by(Content.create_date).limit(
-        BotConfig.rows_per_query).all()
+    return session.query(Content).filter(Content.is_sent == 0).filter(
+        or_(Content.allow_publish == 0, Content.allow_publish == 2)).order_by(
+        Content.create_date).limit(BotConfig.rows_per_query).all()
 
 
 def get_accept_content():
-    return session.query(Content).filter(Content.is_publish == 1).order_by(Content.create_date).all()
+    return session.query(Content).filter(Content.is_sent == 0).filter(Content.allow_publish == 1).order_by(
+        Content.create_date).all()
 
 
 # def insert_channel(channel):
