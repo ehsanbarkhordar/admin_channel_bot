@@ -93,7 +93,6 @@ def admin_panel(bot, update):
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.finish_conversation(update)
 
 
@@ -126,17 +125,12 @@ def get_sent_content(bot, update):
         kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        MessageHandler(TemplateResponseFilter(), add_or_reject_content),
-                                                        MessageHandler(DefaultFilter(), start_conversation)])
+    dispatcher.finish_conversation(update)
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[ReadyMessage.accept_content.format()]))
 def add_or_reject_content(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
     message = update.get_effective_message().text_message
     message = message.split("-")
     action = message[0]
@@ -149,21 +143,18 @@ def add_or_reject_content(bot, update):
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-        my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     elif action == TMessage.reject:
         change_publish_status(content_id, "-1")
         text_message = TextMessage(ReadyMessage.reject_content)
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-        my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     elif action == TMessage.accept_with_edit:
         change_publish_status(content_id, "2")
         text_message = TextMessage(ReadyMessage.replace_description)
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-        my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         MessageHandler(TextFilter(), replace_description),
@@ -175,7 +166,6 @@ def add_or_reject_content(bot, update):
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def replace_description(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
     new_description = update.get_effective_message().text
     content_id = dispatcher.get_conversation_data(update, "content_id")
     change_description(content_id, new_description)
@@ -184,7 +174,6 @@ def replace_description(bot, update):
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         MessageHandler(TemplateResponseFilter(), add_or_reject_content),
@@ -194,12 +183,10 @@ def replace_description(bot, update):
 # ============================================== Add Category ===================================================
 def get_category_name(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
     text_message = TextMessage(ReadyMessage.enter_category_name)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         MessageHandler(TextFilter(), add_category),
@@ -208,7 +195,6 @@ def get_category_name(bot, update):
 
 def add_category(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
     category_name = update.get_effective_message().text
     new_category = Category(name=category_name)
     result = insert_category(new_category)
@@ -222,14 +208,12 @@ def add_category(bot, update):
     kwargs = {"update": update, "message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=start_again, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.finish_conversation(update)
 
 
 # ============================================== User Panel ===================================================
 def user_panel(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
     btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
                 TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
@@ -237,7 +221,6 @@ def user_panel(bot, update):
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         MessageHandler(
@@ -265,8 +248,7 @@ def get_channel_name(bot, update):
     user_peer = update.get_effective_user()
     channel_name = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "channel_name", channel_name)
-    t = dispatcher.get_conversation_data(update, "channel_name")
-    print(t)
+    # t = dispatcher.get_conversation_data(update, "channel_name")
     text_message = TextMessage(ReadyMessage.enter_channel_nick_name)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
@@ -366,14 +348,12 @@ def get_channel_logo(bot, update):
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.info]))
 def info(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
     btn_list = [TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
     general_message = TextMessage(ReadyMessage.information)
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
     kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
-    my_logger.info(LogMessage.info, extra={"user_id": user_id, "tag": "info"})
     dispatcher.finish_conversation(update)
 
 
