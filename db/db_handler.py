@@ -144,6 +144,10 @@ def get_unpublished_content():
         BotConfig.rows_per_query).all()
 
 
+def get_accept_content():
+    return session.query(Content).filter(Content.is_publish == 1).order_by(Content.create_date).all()
+
+
 # def insert_channel(channel):
 #     try:
 #         session.add(channel)
@@ -192,6 +196,7 @@ def insert_category(category):
 # def get_channel_by_name(channel_name):
 #     return session.query(Channel).filter(Channel.name == channel_name).one_or_none()
 #
+
 
 def get_all_categories():
     return session.query(Category).all()

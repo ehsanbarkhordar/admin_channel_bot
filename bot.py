@@ -11,6 +11,8 @@ from bot_config import BotConfig
 from constant.message import ReadyMessage, TMessage, LogMessage, Regex
 import asyncio
 
+from message_sender import MessageSender
+
 updater = Updater(token=BotConfig.bot_token,
                   loop=asyncio.get_event_loop())
 bot = updater.bot
@@ -18,6 +20,13 @@ dispatcher = updater.dispatcher
 
 my_logger = Logger.logger
 create_all_table()
+
+post_sender = MessageSender()
+post_sender.start()
+post_sender.bot = bot
+post_sender.updater = updater
+post_sender.dispatcher = dispatcher
+post_sender.logger=my_logger
 
 
 def success(response, user_data):
@@ -117,10 +126,7 @@ def get_sent_content(bot, update):
             TemplateMessageButton(text=TMessage.reject, value=TMessage.reject + "-" + str(content.id), action=0)]
         category = get_category_by_id(content.category_id)
         logo = get_logo_by_id(content.channel_logo_id)
-        text_message = TextMessage(ReadyMessage.request_content_text.format(content.channel_name,
-                                                                            content.channel_nick_name,
-                                                                            content.channel_description,
-                                                                            category.name))
+
         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
                                      250, file_storage_version=1, caption_text=text_message)
 

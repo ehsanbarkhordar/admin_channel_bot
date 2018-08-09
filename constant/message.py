@@ -37,7 +37,7 @@ class TMessage:
     start = "ادامه"
     info = "راهنما"
     back = "بازگشت به منو اصلی"
-    send_content = "درخواست معرفی کانال به کانال منتخبین"
+    send_content = "درخواست معرفی کانال شما"
     get_sent_content = "دریافت مطالب تازه فرستاده شده"
     get_archive_content = "دریافت مطالب آرشیو"
     add_category = "اضافه کردن دسته جدید"
