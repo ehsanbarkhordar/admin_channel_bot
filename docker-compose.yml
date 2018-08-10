@@ -10,10 +10,10 @@ services:
       - POSTGRES_DB=my_db
       - TZ=Asia/Tehran
     volumes:
-      - /home/elenoon/docker/volumes/pg_admin_channel_bot/postgres/:/var/lib/postgresql/data/
+      - /home/barkhordar/docker/volumes/pg_admin_channel_bot/postgres/:/var/lib/postgresql/data/
 
   admin_channel_bot: # botname_bot
-    image: registry.bale.ai:2443/admin_channel:0.1.0
+    image: admin_channel:0.1.0
     container_name: admin_channel_bot #same as service name
     environment:
     #   PostgreSQL Config
