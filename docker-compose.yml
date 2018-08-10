@@ -2,7 +2,7 @@ version: '3.0'
 services:
   pg_admin_channel_bot: #pg_botname_with_underline_bot
     image: postgres:9.5
-    container_name: s # same as service name
+    container_name: pg_admin_channel_bot # same as service name
     restart: always 
     environment:
       - POSTGRES_USER=postgres
