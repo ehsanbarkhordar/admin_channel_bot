@@ -11,6 +11,8 @@ services:
       - TZ=Asia/Tehran
     volumes:
       - /home/barkhordar/docker/volumes/pg_admin_channel_bot/postgres/:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
 
   admin_channel_bot: # botname_bot
     image: admin_channel:0.1.0
