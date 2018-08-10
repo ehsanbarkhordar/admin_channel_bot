@@ -12,7 +12,7 @@ services:
     volumes:
       - /home/barkhordar/docker/volumes/pg_admin_channel_bot/postgres/:/var/lib/postgresql/data/
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   admin_channel_bot: # botname_bot
     image: admin_channel:0.1.0
@@ -23,7 +23,7 @@ services:
       - POSTGRES_PASSWORD=postgres123456
       - POSTGRES_DB=my_db
       - POSTGRES_HOST=pg_admin_channel_bot
-      - POSTGRES_PORT=5432
+      - POSTGRES_PORT=5433
     #   Config
       - BASE_URL=wss://api.bale.ai/v1/bots/
       - TOKEN=cc9eb7440a4f03a9f6d6c63352c8a18c0e158c33
