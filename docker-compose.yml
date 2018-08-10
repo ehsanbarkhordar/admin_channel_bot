@@ -23,7 +23,7 @@ services:
       - POSTGRES_PASSWORD=postgres123456
       - POSTGRES_DB=my_db
       - POSTGRES_HOST=pg_admin_channel_bot
-      - POSTGRES_PORT=5433
+      - POSTGRES_PORT=5432
     #   Config
       - BASE_URL=wss://api.bale.ai/v1/bots/
       - TOKEN=cc9eb7440a4f03a9f6d6c63352c8a18c0e158c33
