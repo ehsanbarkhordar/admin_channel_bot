@@ -26,7 +26,7 @@ services:
       - POSTGRES_PORT=5432
     #   Config
       - BASE_URL=wss://api.bale.ai/v1/bots/
-      - TOKEN=cc9eb7440a4f03a9f6d6c63352c8a18c0e158c33
+      - TOKEN=386f13d7a666aece40fc1c6612a85b63aead250f
       - CHECK_INTERVAL=0.5
       - ROWS_PER_QUERY=3
       - SEND_DELAY=2
