@@ -15,7 +15,7 @@ services:
       - "5433:5432"
 
   admin_channel_bot: # botname_bot
-    image: admin_channel:0.1.0
+    image: admin_channel:0.2.0
     container_name: admin_channel_bot #same as service name
     environment:
     #   PostgreSQL Config
