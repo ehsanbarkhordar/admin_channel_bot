@@ -218,6 +218,7 @@ def replace_description(bot, update):
 
 
 # ============================================== Add Category ===================================================
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.add_category]))
 def get_category_name(bot, update):
     user_peer = update.get_effective_user()
     text_message = TextMessage(ReadyMessage.enter_category_name)
@@ -239,6 +240,12 @@ def add_category(bot, update):
         text_message = TextMessage(ReadyMessage.error)
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+        return 0
+    if result == ReadyMessage.duplicated_category:
+        text_message = TextMessage(ReadyMessage.duplicated_category)
+        kwargs = {"update": update, "message": text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(text_message, user_peer, success_callback=start_again, failure_callback=failure,
                          kwargs=kwargs)
         return 0
     text_message = TextMessage(ReadyMessage.category_added_successfully.format(category_name))
@@ -285,7 +292,6 @@ def get_channel_name(bot, update):
     user_peer = update.get_effective_user()
     channel_name = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "channel_name", channel_name)
-    # t = dispatcher.get_conversation_data(update, "channel_name")
     text_message = TextMessage(ReadyMessage.enter_channel_nick_name)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
@@ -392,6 +398,17 @@ def info(bot, update):
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
     dispatcher.finish_conversation(update)
+
+
+# ============================================== Default ===================================================
+@dispatcher.message_handler(DefaultFilter())
+def default(bot, update):
+    user_peer = update.get_effective_user()
+    user_id = user_peer.peer_id
+    if is_admin(user_id):
+        admin_panel(bot, update)
+    else:
+        user_panel(bot, update)
 
 
 updater.run()

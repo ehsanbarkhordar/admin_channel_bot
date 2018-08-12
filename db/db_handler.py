@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.dialects.postgresql import insert
 
 from bot_config import BotConfig
+from constant.message import ReadyMessage
 from db.db_config import DatabaseConfig
 from balebot.utils.logger import Logger
 
@@ -193,6 +194,9 @@ def insert_logo(logo):
 
 
 def insert_category(category):
+    category_old = session.query(Category).filter(Category.name == category.name).one_or_none()
+    if category_old:
+        return ReadyMessage.duplicated_category
     try:
         session.add(category)
         session.commit()
