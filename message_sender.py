@@ -49,9 +49,10 @@ class MessageSender:
                         category = get_category_by_id(row.category_id)
                         logo = get_logo_by_id(row.channel_logo_id)
                         text_message = TextMessage(ReadyMessage.request_content_text.format(row.channel_name,
-                                                                                            row.channel_nick_name,
                                                                                             row.channel_description,
-                                                                                            category.name))
+                                                                                            category.name,
+                                                                                            row.channel_nick_name,
+                                                                                            row.channel_nick_name))
                         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size,
                                                      "image/jpeg", None, 250,
                                                      250, file_storage_version=1, caption_text=text_message)

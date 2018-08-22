@@ -51,6 +51,7 @@ class Content(Base):
     channel_name = Column(String, nullable=False)
     channel_description = Column(Text, nullable=False)
     channel_nick_name = Column(String, nullable=False)
+    type_id = Column(Integer, ForeignKey('type.id'), nullable=False)
     category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
     channel_logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
@@ -60,20 +61,21 @@ class Content(Base):
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, channel_logo_id, user_id,
-                 access_hash):
+    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, type_id, channel_logo_id,
+                 user_id, access_hash):
         self.channel_name = channel_name
         self.channel_description = channel_description
         self.channel_nick_name = channel_nick_name
         self.category_id = category_id
+        self.type_id = type_id
         self.channel_logo_id = channel_logo_id
         self.user_id = user_id
         self.access_hash = access_hash
 
     def __repr__(self):
         return "<Content(channel_name='%s',channel_description='%s',channel_nick_name='%s'" \
-               ",category_id='%s',channel_logo_id='%s',user_id='%i',access_hash='%s')>" % (
-                   self.channel_name, self.channel_description, self.channel_nick_name, self.category_id,
+               ",category_id='%s',type_id='%s',channel_logo_id='%s',user_id='%i',access_hash='%s')>" % (
+                   self.channel_name, self.channel_description, self.channel_nick_name, self.category_id, self.type_id,
                    self.channel_logo_id, self.user_id, self.access_hash)
 
 
@@ -91,6 +93,16 @@ class Content(Base):
 #         self.channel_id = channel_id
 #         self.channel_access_hash = channel_access_hash
 #         self.content = content
+
+
+class Type(Base):
+    __tablename__ = 'type'
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    content = relationship("Content")
+
+    def __init__(self, name):
+        self.name = name
 
 
 class Category(Base):
@@ -206,6 +218,19 @@ def insert_category(category):
         return False
 
 
+def insert_type(type):
+    type_old = session.query(Type).filter(Type.name == type.name).one_or_none()
+    if type_old:
+        return ReadyMessage.duplicated_type
+    try:
+        session.add(type)
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
 #
 # def get_all_channels():
 #     return session.query(Channel).all()
@@ -220,8 +245,16 @@ def get_all_categories():
     return session.query(Category).all()
 
 
+def get_all_type():
+    return session.query(Type).all()
+
+
 def get_category_by_name(category_name):
     return session.query(Category).filter(Category.name == category_name).one_or_none()
+
+
+def get_type_by_name(type_name):
+    return session.query(Type).filter(Type.name == type_name).one_or_none()
 
 
 def get_category_by_id(category_id):
