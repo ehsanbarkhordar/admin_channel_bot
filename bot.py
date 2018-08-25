@@ -9,7 +9,7 @@ from db.db_handler import create_all_table, get_all_categories, get_category_by_
     insert_content, insert_logo, Logo, Content, \
     get_logo_by_fileid_access_hash, insert_category, Category, get_unpublished_content, get_category_by_id, \
     get_logo_by_id, change_publish_status, change_description, get_content_by_id, Type, insert_type, get_all_type, \
-    get_type_by_name
+    get_type_by_name, change_logo
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -73,7 +73,8 @@ def is_admin(user_id):
 
 # ============================================== Start Conversation ===================================================
 @dispatcher.message_handler(
-    filters=[TemplateResponseFilter(keywords=[TMessage.start, TMessage.back]), TextFilter(keywords="start")])
+    filters=[TemplateResponseFilter(keywords=[TMessage.start, TMessage.back]), TextFilter(keywords="start"),
+             DefaultFilter()])
 def start_conversation(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
@@ -93,7 +94,7 @@ def admin_panel(bot, update):
         TemplateMessageButton(text=TMessage.get_sent_content, value=TMessage.get_sent_content, action=0),
         TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
         TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
-        TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
+        TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
         TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
@@ -126,12 +127,12 @@ def get_sent_content(bot, update):
                                   value=TMessage.accept_with_edit + " - " + eng_to_arabic_number(content.id),
                                   action=0)]
         category = get_category_by_id(content.category_id)
-        logo = get_logo_by_id(content.channel_logo_id)
-        text_message = TextMessage((ReadyMessage.request_content_text.format(content.channel_name,
-                                                                             content.channel_description,
+        logo = get_logo_by_id(content.logo_id)
+        text_message = TextMessage((ReadyMessage.request_content_text.format(content.name,
+                                                                             content.description,
                                                                              category.name,
-                                                                             content.channel_nick_name,
-                                                                             content.channel_nick_name)))
+                                                                             content.nick_name,
+                                                                             content.nick_name)))
         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
                                      250, file_storage_version=1, caption_text=text_message)
 
@@ -157,55 +158,65 @@ def add_or_reject_content(bot, update):
     content_id = arabic_to_eng_number(content_id)
     dispatcher.set_conversation_data(update, "content_id", content_id)
     content = get_content_by_id(content_id)
+    client_peer = Peer(PeerType.user, peer_id=content.user_id, access_hash=content.access_hash)
+    dispatcher.set_conversation_data(update, "client_peer", client_peer)
     if content.is_sent != 0:
-        text_message = TextMessage(ReadyMessage.channel_sent_before)
+        text_message = TextMessage(ReadyMessage.content_sent_before)
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
         return 0
-    client_peer = Peer(PeerType.user, peer_id=content.user_id, access_hash=content.access_hash)
     if action == TMessage.accept:
         change_publish_status(content_id, "1")
-        text_message = TextMessage(ReadyMessage.accept_content.format(content.channel_name, content.channel_nick_name))
+        text_message = TextMessage(ReadyMessage.accept_content.format(content.name, content.nick_name))
         kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
         client_text_message = TextMessage(
-            ReadyMessage.accept_content_client.format(content.channel_name, content.channel_nick_name))
+            ReadyMessage.accept_content_client.format(content.name, content.nick_name))
         kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
+        return 0
     elif action == TMessage.reject:
         change_publish_status(content_id, "-1")
-        text_message = TextMessage(ReadyMessage.reject_content.format(content.channel_name, content.channel_nick_name))
-        kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
-        bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+        btn_list = [TemplateMessageButton(text=TMessage.no_reason, value=TMessage.no_reason, action=0)]
+        general_message = TextMessage(
+            ReadyMessage.reject_content.format(content.name, content.channel_nick_name))
+        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-        client_text_message = TextMessage(
-            ReadyMessage.reject_content_client.format(content.channel_name, content.channel_nick_name))
-        kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
-        bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
-                         kwargs=kwargs)
+        dispatcher.register_conversation_next_step_handler(
+            update, [CommandHandler("start", start_conversation),
+                     MessageHandler(TextFilter(), reject_reason),
+                     MessageHandler(TemplateResponseFilter(keywords=[TMessage.accept, TMessage.reject,
+                                                                     TMessage.accept_with_edit]),
+                                    add_or_reject_content),
+                     MessageHandler(DefaultFilter(), start_conversation)])
+        return 0
     elif action == TMessage.accept_with_edit:
         change_publish_status(content_id, "2")
-        text_message = TextMessage(
-            ReadyMessage.replace_description.format(content.channel_name, content.channel_nick_name))
-        kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
-        bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+        btn_list = [TemplateMessageButton(text=TMessage.change_logo, value=TMessage.change_logo, action=0)]
+        general_message = TextMessage(
+            ReadyMessage.replace_description.format(content.name, content.nick_name))
+        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
         client_text_message = TextMessage(
-            ReadyMessage.accept_content_with_edit_client.format(content.channel_name, content.channel_nick_name))
+            ReadyMessage.accept_content_with_edit_client.format(content.name, content.nick_name))
         kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
                          kwargs=kwargs)
-    dispatcher.register_conversation_next_step_handler(update,
-                                                       [CommandHandler("start", start_conversation),
-                                                        MessageHandler(TextFilter(), replace_description),
-                                                        MessageHandler(TemplateResponseFilter(
-                                                            keywords=[TMessage.accept, TMessage.reject,
-                                                                      TMessage.accept_with_edit]),
-                                                            add_or_reject_content),
-                                                        MessageHandler(DefaultFilter(), start_conversation)])
+        dispatcher.register_conversation_next_step_handler(
+            update, [CommandHandler("start", start_conversation),
+                     MessageHandler(TextFilter(), replace_description),
+                     MessageHandler(TemplateResponseFilter(keywords=[TMessage.change_logo]), replace_logo),
+                     MessageHandler(TemplateResponseFilter(keywords=[TMessage.accept, TMessage.reject,
+                                                                     TMessage.accept_with_edit]),
+                                    add_or_reject_content),
+                     MessageHandler(DefaultFilter(), start_conversation)])
 
 
 def replace_description(bot, update):
@@ -213,10 +224,35 @@ def replace_description(bot, update):
     new_description = update.get_effective_message().text
     content_id = dispatcher.get_conversation_data(update, "content_id")
     change_description(content_id, new_description)
+    change_logo(content_id, "1")
+    text_message = TextMessage(ReadyMessage.replace_description_success_fully)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
+    dispatcher.finish_conversation(update)
+
+
+def replace_logo(bot, update):
+    user_peer = update.get_effective_user()
+    new_logo = update.get_effective_message()
+    content_id = dispatcher.get_conversation_data(update, "content_id")
+    change_logo(content_id, logo_id)
     change_publish_status(content_id, "1")
     text_message = TextMessage(ReadyMessage.replace_description_success_fully)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
-    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure,
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
+    dispatcher.finish_conversation(update)
+
+
+def reject_reason(bot, update):
+    user_peer = update.get_effective_user()
+    reason_text = update.get_effective_message().text
+    content_id = dispatcher.get_conversation_data(update, "content_id")
+    client_peer = dispatcher.get_conversation_data(update, "client_peer")
+    content = get_content_by_id(content_id)
+    client_text_message = TextMessage(ReadyMessage.reject_content_client.format(
+        content.name, content.nick_name) + "\n" + ReadyMessage.reason.format(reason_text))
+    kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
     dispatcher.finish_conversation(update)
 
@@ -300,7 +336,7 @@ def add_type(bot, update):
 # ============================================== User Panel ===================================================
 def user_panel(bot, update):
     user_peer = update.get_effective_user()
-    btn_list = [TemplateMessageButton(text=TMessage.send_content, value=TMessage.send_content, action=0),
+    btn_list = [TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
                 TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
     template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
@@ -310,13 +346,13 @@ def user_panel(bot, update):
     dispatcher.register_conversation_next_step_handler(update,
                                                        [CommandHandler("start", start_conversation),
                                                         MessageHandler(
-                                                            TemplateResponseFilter(keywords=TMessage.send_content),
-                                                            send_content),
+                                                            TemplateResponseFilter(keywords=TMessage.request_content),
+                                                            request_content),
                                                         MessageHandler(DefaultFilter(), start_conversation)])
 
 
-@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.send_content]))
-def send_content(bot, update):
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.request_content]))
+def request_content(bot, update):
     dispatcher.clear_conversation_data(update)
     user_peer = update.get_effective_user()
     general_message = TextMessage(ReadyMessage.choose_content_type)
@@ -337,7 +373,7 @@ def send_content(bot, update):
 
 def get_content_type(bot, update):
     user_peer = update.get_effective_user()
-    content_type_name = update.get_effective_message().text
+    content_type_name = update.get_effective_message().text_message
     content_type = get_type_by_name(content_type_name)
     dispatcher.set_conversation_data(update, "content_type_id", content_type.id)
     text_message = TextMessage(ReadyMessage.enter_content_name)
@@ -351,34 +387,34 @@ def get_content_type(bot, update):
 
 def get_content_name(bot, update):
     user_peer = update.get_effective_user()
-    channel_name = update.get_effective_message().text
-    dispatcher.set_conversation_data(update, "channel_name", channel_name)
+    content_name = update.get_effective_message().text
+    dispatcher.set_conversation_data(update, "content_name", content_name)
     text_message = TextMessage(ReadyMessage.enter_content_nick_name)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
     dispatcher.register_conversation_next_step_handler(
         update, [CommandHandler("start", start_conversation),
-                 MessageHandler(TextFilter(), get_channel_nick_name),
+                 MessageHandler(TextFilter(), get_content_nick_name),
                  MessageHandler(DefaultFilter(), start_conversation)])
 
 
-def get_channel_nick_name(bot, update):
+def get_content_nick_name(bot, update):
     user_peer = update.get_effective_user()
-    channel_nick_name = update.get_effective_message().text
-    dispatcher.set_conversation_data(update, "channel_nick_name", channel_nick_name)
+    nick_name = update.get_effective_message().text
+    dispatcher.set_conversation_data(update, "content_nick_name", nick_name)
     text_message = TextMessage(ReadyMessage.enter_content_description)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
     dispatcher.register_conversation_next_step_handler(
         update, [CommandHandler("start", start_conversation),
-                 MessageHandler(TextFilter(), get_channel_description),
+                 MessageHandler(TextFilter(), get_content_description),
                  MessageHandler(DefaultFilter(), start_conversation)])
 
 
-def get_channel_description(bot, update):
+def get_content_description(bot, update):
     user_peer = update.get_effective_user()
-    channel_description = update.get_effective_message().text
-    dispatcher.set_conversation_data(update, "channel_description", channel_description)
+    description = update.get_effective_message().text
+    dispatcher.set_conversation_data(update, "content_description", description)
     general_message = TextMessage(ReadyMessage.choose_content_category)
     category_list = get_all_categories()
     category_name_list = []
@@ -391,25 +427,25 @@ def get_channel_description(bot, update):
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
     dispatcher.register_conversation_next_step_handler(
         update, [CommandHandler("start", start_conversation),
-                 MessageHandler(TemplateResponseFilter(keywords=category_name_list), get_channel_category),
+                 MessageHandler(TemplateResponseFilter(keywords=category_name_list), get_content_category),
                  MessageHandler(DefaultFilter(), start_conversation)])
 
 
-def get_channel_category(bot, update):
+def get_content_category(bot, update):
     user_peer = update.get_effective_user()
-    channel_category_name = update.get_effective_message().text_message
-    channel_category = get_category_by_name(channel_category_name)
-    dispatcher.set_conversation_data(update, "channel_category_id", channel_category.id)
+    category_name = update.get_effective_message().text_message
+    category = get_category_by_name(category_name)
+    dispatcher.set_conversation_data(update, "category_id", category.id)
     text_message = TextMessage(ReadyMessage.upload_content_log)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
     dispatcher.register_conversation_next_step_handler(
         update, [CommandHandler("start", start_conversation),
-                 MessageHandler(PhotoFilter(), get_channel_logo),
+                 MessageHandler(PhotoFilter(), get_content_logo),
                  MessageHandler(DefaultFilter(), start_conversation)])
 
 
-def get_channel_logo(bot, update):
+def get_content_logo(bot, update):
     user_peer = update.get_effective_user()
     user_id = user_peer.peer_id
     access_hash = user_peer.access_hash
@@ -417,14 +453,14 @@ def get_channel_logo(bot, update):
     logo_obj = Logo(file_id=logo.file_id, access_hash=logo.access_hash, file_size=logo.file_size, thumb=logo.thumb)
     insert_logo(logo_obj)
     logo = get_logo_by_fileid_access_hash(logo.file_id, logo.access_hash)
-    channel_name = dispatcher.get_conversation_data(update, "channel_name")
-    channel_description = dispatcher.get_conversation_data(update, "channel_description")
-    channel_nick_name = dispatcher.get_conversation_data(update, "channel_nick_name")
-    channel_category_id = dispatcher.get_conversation_data(update, "channel_category_id")
+    content_name = dispatcher.get_conversation_data(update, "content_name")
+    content_description = dispatcher.get_conversation_data(update, "content_description")
+    content_nick_name = dispatcher.get_conversation_data(update, "content_nick_name")
+    category_id = dispatcher.get_conversation_data(update, "category_id")
     content_type_id = dispatcher.get_conversation_data(update, "content_type_id")
-    content_obj = Content(channel_name=channel_name, channel_description=channel_description,
-                          channel_nick_name=channel_nick_name,
-                          category_id=channel_category_id, channel_logo_id=logo.id,
+    content_obj = Content(name=content_name, description=content_description,
+                          nick_name=content_nick_name,
+                          category_id=category_id, logo_id=logo.id,
                           user_id=user_id, access_hash=access_hash, type_id=content_type_id)
     insert_content(content_obj)
     text_message = TextMessage(ReadyMessage.success_send_content)
@@ -444,17 +480,6 @@ def info(bot, update):
     bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
     dispatcher.finish_conversation(update)
-
-
-# ============================================== Default ===================================================
-@dispatcher.message_handler(DefaultFilter())
-def default(bot, update):
-    user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
-    if is_admin(user_id):
-        admin_panel(bot, update)
-    else:
-        user_panel(bot, update)
 
 
 updater.run()

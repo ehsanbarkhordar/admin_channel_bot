@@ -48,12 +48,12 @@ def create_all_table():
 class Content(Base):
     __tablename__ = 'content'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    channel_name = Column(String, nullable=False)
-    channel_description = Column(Text, nullable=False)
-    channel_nick_name = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    nick_name = Column(String, nullable=False)
     type_id = Column(Integer, ForeignKey('type.id'), nullable=False)
     category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
-    channel_logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
+    logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
     allow_publish = Column(Integer, default=0, nullable=False)
     is_sent = Column(Integer, default=0, nullable=False)
@@ -61,22 +61,21 @@ class Content(Base):
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, channel_name, channel_description, channel_nick_name, category_id, type_id, channel_logo_id,
-                 user_id, access_hash):
-        self.channel_name = channel_name
-        self.channel_description = channel_description
-        self.channel_nick_name = channel_nick_name
+    def __init__(self, name, description, nick_name, category_id, type_id, logo_id, user_id, access_hash):
+        self.name = name
+        self.description = description
+        self.nick_name = nick_name
         self.category_id = category_id
         self.type_id = type_id
-        self.channel_logo_id = channel_logo_id
+        self.logo_id = logo_id
         self.user_id = user_id
         self.access_hash = access_hash
 
     def __repr__(self):
-        return "<Content(channel_name='%s',channel_description='%s',channel_nick_name='%s'" \
-               ",category_id='%s',type_id='%s',channel_logo_id='%s',user_id='%i',access_hash='%s')>" % (
-                   self.channel_name, self.channel_description, self.channel_nick_name, self.category_id, self.type_id,
-                   self.channel_logo_id, self.user_id, self.access_hash)
+        return "<Content(name='%s',description='%s',nick_name='%s'" \
+               ",category_id='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s')>" % (
+                   self.name, self.description, self.nick_name, self.category_id, self.type_id,
+                   self.logo_id, self.user_id, self.access_hash)
 
 
 #
@@ -145,7 +144,18 @@ def change_publish_status(content_id, status_code):
 def change_description(content_id, description):
     content = session.query(Content).filter(Content.id == content_id).one_or_none()
     try:
-        content.channel_description = description
+        content.description = description
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
+def change_logo(content_id, logo_id):
+    content = session.query(Content).filter(Content.id == content_id).one_or_none()
+    try:
+        content.logo_id = logo_id
         session.commit()
         return True
     except ValueError:
