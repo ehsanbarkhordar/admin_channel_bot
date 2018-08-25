@@ -182,7 +182,7 @@ def add_or_reject_content(bot, update):
         change_publish_status(content_id, "-1")
         btn_list = [TemplateMessageButton(text=TMessage.no_reason, value=TMessage.no_reason, action=0)]
         general_message = TextMessage(
-            ReadyMessage.reject_content.format(content.name, content.channel_nick_name))
+            ReadyMessage.reject_content.format(content.name, content.nick_name))
         template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
         kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
         bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
@@ -224,20 +224,42 @@ def replace_description(bot, update):
     new_description = update.get_effective_message().text
     content_id = dispatcher.get_conversation_data(update, "content_id")
     change_description(content_id, new_description)
-    change_logo(content_id, "1")
-    text_message = TextMessage(ReadyMessage.replace_description_success_fully)
-    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
-    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
-    dispatcher.finish_conversation(update)
+    btn_list = [TemplateMessageButton(text=TMessage.change_logo, value=TMessage.change_logo, action=0),
+                TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
+    general_message = TextMessage(ReadyMessage.replace_description_successfully)
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(
+        update, [CommandHandler("start", start_conversation),
+                 MessageHandler(TemplateResponseFilter(keywords=[TMessage.change_logo]), replace_logo),
+                 MessageHandler(TemplateResponseFilter(keywords=[TMessage.accept, TMessage.reject,
+                                                                 TMessage.accept_with_edit]),
+                                add_or_reject_content),
+                 MessageHandler(DefaultFilter(), start_conversation)])
 
 
 def replace_logo(bot, update):
     user_peer = update.get_effective_user()
-    new_logo = update.get_effective_message()
+    text_message = TextMessage(ReadyMessage.send_new_logo)
+    kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(
+        update, [CommandHandler("start", start_conversation),
+                 MessageHandler(PhotoFilter(), get_new_logo),
+                 MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def get_new_logo(bot, update):
+    user_peer = update.get_effective_user()
+    photo_message = update.get_effective_message()
+    new_logo = Logo(photo_message.file_id, photo_message.access_hash, photo_message.file_size, photo_message.thumb)
     content_id = dispatcher.get_conversation_data(update, "content_id")
-    change_logo(content_id, logo_id)
+    insert_logo(new_logo)
+    logo = get_logo_by_fileid_access_hash(photo_message.file_id, photo_message.access_hash)
+    change_logo(content_id, logo.id)
     change_publish_status(content_id, "1")
-    text_message = TextMessage(ReadyMessage.replace_description_success_fully)
+    text_message = TextMessage(ReadyMessage.replace_logo_successfully)
     kwargs = {"message": text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
     dispatcher.finish_conversation(update)
@@ -254,6 +276,11 @@ def reject_reason(bot, update):
     kwargs = {"message": client_text_message, "user_peer": user_peer, "try_times": 1}
     bot.send_message(client_text_message, client_peer, success_callback=success, failure_callback=failure,
                      kwargs=kwargs)
+    btn_list = [TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
+    general_message = TextMessage(ReadyMessage.reason_sent_to_client)
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure, kwargs=kwargs)
     dispatcher.finish_conversation(update)
 
 
