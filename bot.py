@@ -104,6 +104,45 @@ def admin_panel(bot, update):
     dispatcher.finish_conversation(update)
 
 
+@dispatcher.message_handler(TextFilter(pattern=Regex.number_regex))
+def get_sent_content(bot, update):
+    user_peer = update.get_effective_user()
+    message = update.get_effective_message()
+
+    user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
+    if not unpublished_content:
+        text_message = TextMessage(ReadyMessage.no_new_content_recently)
+        kwargs = {"update": update, "message": text_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(text_message, user_peer, success_callback=start_again, failure_callback=failure,
+                         kwargs=kwargs)
+        return 0
+    for content in unpublished_content:
+        btn_list = [
+            TemplateMessageButton(text=TMessage.accept,
+                                  value=TMessage.accept + " - " + eng_to_arabic_number(content.id), action=0),
+            TemplateMessageButton(text=TMessage.reject,
+                                  value=TMessage.reject + " - " + eng_to_arabic_number(content.id), action=0),
+            TemplateMessageButton(text=TMessage.accept_with_edit,
+                                  value=TMessage.accept_with_edit + " - " + eng_to_arabic_number(content.id),
+                                  action=0)]
+        category = get_category_by_id(content.category_id)
+        logo = get_logo_by_id(content.logo_id)
+        text_message = TextMessage((ReadyMessage.request_content_text.format(content.name,
+                                                                             content.description,
+                                                                             category.name,
+                                                                             content.nick_name,
+                                                                             content.nick_name)))
+        photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
+                                     250, file_storage_version=1, caption_text=text_message)
+
+        template_message = TemplateMessage(general_message=photo_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "user_peer": user_peer, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success, failure_callback=failure,
+                         kwargs=kwargs)
+    dispatcher.finish_conversation(update)
+
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def get_sent_content(bot, update):
     user_peer = update.get_effective_user()
