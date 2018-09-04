@@ -320,7 +320,7 @@ def get_category_name(bot, update):
 
 def add_category(bot, update):
     user_peer = update.get_effective_user()
-    category_name = update.get_effective_message().text_message
+    category_name = update.get_effective_message().text
     type_name = dispatcher.get_conversation_data(update, "type_name")
     type = get_type_by_name(type_name=type_name)
     new_category = Category(name=category_name, type_id=type.id)

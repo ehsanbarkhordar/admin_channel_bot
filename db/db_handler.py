@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import create_engine, ForeignKey, or_, PrimaryKeyConstraint
+from sqlalchemy import create_engine, ForeignKey, or_, PrimaryKeyConstraint, Table
 from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
@@ -29,7 +29,7 @@ class Type(Base):
     __tablename__ = 'type'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     name = Column(String, nullable=False)
-    category = relationship("category")
+    category = relationship("Category")
 
     def __init__(self, name):
         self.name = name
@@ -46,14 +46,18 @@ class Category(Base):
         self.type_id = type_id
 
 
-class ContentToCategory(Base):
-    __tablename__ = 'content_to_category'
-    content_id = Column(Integer, ForeignKey('content.id'), primary_key=True)
-    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
-
-    def __init__(self, content_id, category_id):
-        self.content_id = content_id
-        self.category_id = category_id
+# class ContentToCategory(Base):
+#     __tablename__ = 'content_to_category'
+#     content_id = Column(Integer, ForeignKey('content.id'), primary_key=True)
+#     category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
+#
+#     def __init__(self, content_id, category_id):
+#         self.content_id = content_id
+#         self.category_id = category_id
+ContentToCategory = Table('content_to_category', Base.metadata,
+                          Column('content_id', Integer, ForeignKey('content.id')),
+                          Column('category_id', Integer, ForeignKey('category.id'))
+                          )
 
 
 class Content(Base):
@@ -62,7 +66,7 @@ class Content(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     nick_name = Column(String, nullable=False)
-    category = relationship("category", secondary=ContentToCategory, backref="content")
+    category = relationship("Category", secondary=ContentToCategory, backref="content")
     logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
     allow_publish = Column(Integer, default=0, nullable=False)
