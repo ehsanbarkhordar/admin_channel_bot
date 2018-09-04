@@ -1,10 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import create_engine, ForeignKey, or_
+from sqlalchemy import create_engine, ForeignKey, or_, PrimaryKeyConstraint
 from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
-from sqlalchemy.dialects.postgresql import insert
 
 from bot_config import BotConfig
 from constant.message import ReadyMessage
@@ -26,79 +25,11 @@ def create_all_table():
     return True
 
 
-#
-# class Admin(Base):
-#     __tablename__ = 'admin'
-#     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-#     name = Column(String, nullable=False)
-#     user_id = Column(Integer, nullable=False, unique=True)
-#     access_hash = Column(String, nullable=False)
-#     is_super_admin = Column(Boolean, default=False)
-#
-#     def __init__(self, name, user_id, access_hash):
-#         self.name = name
-#         self.user_id = user_id
-#         self.access_hash = access_hash
-#
-#     def __repr__(self):
-#         return "<User(name='%s',user_id='%i',access_hash='%s',is_super_admin='%s')>" % (
-#             self.name, self.user_id, self.access_hash, self.is_super_admin)
-
-
-class Content(Base):
-    __tablename__ = 'content'
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=False)
-    nick_name = Column(String, nullable=False)
-    type_id = Column(Integer, ForeignKey('type.id'), nullable=False)
-    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
-    logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
-    create_date = Column(DateTime, default=datetime.now())
-    allow_publish = Column(Integer, default=0, nullable=False)
-    is_sent = Column(Integer, default=0, nullable=False)
-    publish_date = Column(DateTime)
-    user_id = Column(Integer, nullable=False)
-    access_hash = Column(String, nullable=False)
-
-    def __init__(self, name, description, nick_name, category_id, type_id, logo_id, user_id, access_hash):
-        self.name = name
-        self.description = description
-        self.nick_name = nick_name
-        self.category_id = category_id
-        self.type_id = type_id
-        self.logo_id = logo_id
-        self.user_id = user_id
-        self.access_hash = access_hash
-
-    def __repr__(self):
-        return "<Content(name='%s',description='%s',nick_name='%s'" \
-               ",category_id='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s')>" % (
-                   self.name, self.description, self.nick_name, self.category_id, self.type_id,
-                   self.logo_id, self.user_id, self.access_hash)
-
-
-#
-# class Channel(Base):
-#     __tablename__ = 'channel'
-#     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-#     name = Column(String, nullable=False)
-#     channel_id = Column(Integer, nullable=False)
-#     channel_access_hash = Column(String, nullable=False)
-#     content = relationship("Content")
-#
-#     def __init__(self, name, channel_id, channel_access_hash, content):
-#         self.name = name
-#         self.channel_id = channel_id
-#         self.channel_access_hash = channel_access_hash
-#         self.content = content
-
-
 class Type(Base):
     __tablename__ = 'type'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     name = Column(String, nullable=False)
-    content = relationship("Content")
+    category = relationship("category")
 
     def __init__(self, name):
         self.name = name
@@ -108,10 +39,52 @@ class Category(Base):
     __tablename__ = 'category'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     name = Column(String, nullable=False)
-    content = relationship("Content")
+    type_id = Column(Integer, ForeignKey('type.id'))
 
-    def __init__(self, name):
+    def __init__(self, name, type_id):
         self.name = name
+        self.type_id = type_id
+
+
+class ContentToCategory(Base):
+    __tablename__ = 'content_to_category'
+    content_id = Column(Integer, ForeignKey('content.id'), primary_key=True)
+    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
+
+    def __init__(self, content_id, category_id):
+        self.content_id = content_id
+        self.category_id = category_id
+
+
+class Content(Base):
+    __tablename__ = 'content'
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    nick_name = Column(String, nullable=False)
+    category = relationship("category", secondary=ContentToCategory, backref="content")
+    logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
+    create_date = Column(DateTime, default=datetime.now())
+    allow_publish = Column(Integer, default=0, nullable=False)
+    is_sent = Column(Integer, default=0, nullable=False)
+    publish_date = Column(DateTime)
+    user_id = Column(Integer, nullable=False)
+    access_hash = Column(String, nullable=False)
+
+    def __init__(self, name, description, nick_name, type_id, logo_id, user_id, access_hash):
+        self.name = name
+        self.description = description
+        self.nick_name = nick_name
+        self.type_id = type_id
+        self.logo_id = logo_id
+        self.user_id = user_id
+        self.access_hash = access_hash
+
+    def __repr__(self):
+        return "<Content(name='%s',description='%s',nick_name='%s'" \
+               ",category='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s')>" % (
+                   self.name, self.description, self.nick_name, self.category, self.type_id,
+                   self.logo_id, self.user_id, self.access_hash)
 
 
 class Logo(Base):
@@ -185,16 +158,6 @@ def get_accept_content():
         Content.create_date).all()
 
 
-# def insert_channel(channel):
-#     try:
-#         session.add(channel)
-#         session.commit()
-#         return True
-#     except ValueError:
-#         print(ValueError)
-#         return False
-
-
 def insert_content(content):
     try:
         session.add(content)
@@ -228,27 +191,17 @@ def insert_category(category):
         return False
 
 
-def insert_type(type):
-    type_old = session.query(Type).filter(Type.name == type.name).one_or_none()
+def insert_type(new_type):
+    type_old = session.query(Type).filter(Type.name == new_type.name).one_or_none()
     if type_old:
         return ReadyMessage.duplicated_type
     try:
-        session.add(type)
+        session.add(new_type)
         session.commit()
         return True
     except ValueError:
         print(ValueError)
         return False
-
-
-#
-# def get_all_channels():
-#     return session.query(Channel).all()
-#
-
-# def get_channel_by_name(channel_name):
-#     return session.query(Channel).filter(Channel.name == channel_name).one_or_none()
-#
 
 
 def get_all_categories():
@@ -281,21 +234,3 @@ def get_logo_by_id(logo_id):
 
 def get_content_by_id(content_id):
     return session.query(Content).filter(Content.id == content_id).one_or_none()
-
-# def insert_user(name, user_id, access_hash):
-#     insert_stmt = insert(User).values(user_id=user_id, access_hash=access_hash)
-#     on_update_stmt = insert_stmt.on_conflict_do_update(
-#         index_elements=['user_id'],
-#         set_=dict(final_oauth_token=final_oauth_token,
-#                   final_oauth_token_secret=final_oauth_token_secret))
-#     try:
-#         result = db.execute(on_update_stmt)
-#         session.commit()
-#         return result
-#     except ValueError:
-#         print(ValueError)
-#         return False
-#
-#
-# def get_user(user_id):
-#     return session.query(User).filter(User.user_id == user_id).one_or_none()

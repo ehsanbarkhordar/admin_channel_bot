@@ -12,7 +12,7 @@ class BotConfig:
     max_total_send_failure = int(os.environ.get('MAX_TOTAL_SEND_FAILURE', None) or 10)
     active_next_limit = int(os.environ.get('ACTIVE_NEXT_LIMIT', None) or 40)
 
-    bot_token = os.environ.get('TOKEN', None) or "7bdfb8a3c9d40d89216648f76cd40d2932f90224"
+    bot_token = os.environ.get('TOKEN', None) or "386f13d7a666aece40fc1c6612a85b63aead250f"
     bot_user_id = os.environ.get('USER_ID', None) or "41"
 
     send_delay = float(os.environ.get('SEND_DELAY', None) or 2)

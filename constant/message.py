@@ -11,7 +11,8 @@ class ReadyMessage:
     upload_content_log = "لطفا عکس کانال را آپلود کنید."
     success_send_content = "کانال شما با *موفقیت* در لیست انتظار برای درج در کانال های منتخبین بله قرار گرفت.\n" \
                            "به محض تایید یا رد به شما از طریق همین بات اعلان می گردد."
-    enter_category_name = "نام دسته را وارد نمایید."
+    choose_type = "نوع را انتخاب نمایید."
+    enter_category_name="نام دسته را وارد نمایید."
     enter_type_name = "نام نوع را وارد نمایید."
 
     category_added_successfully = "دسته {} با *موفقیت* اضافه گردید."
