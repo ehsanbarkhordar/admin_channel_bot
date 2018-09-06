@@ -46,18 +46,14 @@ class Category(Base):
         self.type_id = type_id
 
 
-# class ContentToCategory(Base):
-#     __tablename__ = 'content_to_category'
-#     content_id = Column(Integer, ForeignKey('content.id'), primary_key=True)
-#     category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
-#
-#     def __init__(self, content_id, category_id):
-#         self.content_id = content_id
-#         self.category_id = category_id
-ContentToCategory = Table('content_to_category', Base.metadata,
-                          Column('content_id', Integer, ForeignKey('content.id')),
-                          Column('category_id', Integer, ForeignKey('category.id'))
-                          )
+class ContentToCategory(Base):
+    __tablename__ = 'content_to_category'
+    content_id = Column(Integer, ForeignKey('content.id'), primary_key=True)
+    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
+
+    def __init__(self, content_id, category_id):
+        self.content_id = content_id
+        self.category_id = category_id
 
 
 class Content(Base):
@@ -66,7 +62,7 @@ class Content(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     nick_name = Column(String, nullable=False)
-    category = relationship("Category", secondary=ContentToCategory, backref="content")
+    category = relationship("ContentToCategory")
     logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
     allow_publish = Column(Integer, default=0, nullable=False)
@@ -75,7 +71,7 @@ class Content(Base):
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, name, description, nick_name, type_id, logo_id, user_id, access_hash):
+    def __init__(self, name, description, nick_name, type_id, logo_id, user_id, access_hash, publish_date):
         self.name = name
         self.description = description
         self.nick_name = nick_name
@@ -83,12 +79,13 @@ class Content(Base):
         self.logo_id = logo_id
         self.user_id = user_id
         self.access_hash = access_hash
+        self.publish_date = publish_date
 
     def __repr__(self):
         return "<Content(name='%s',description='%s',nick_name='%s'" \
-               ",category='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s')>" % (
+               ",category='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s',publish_date='%s)>" % (
                    self.name, self.description, self.nick_name, self.category, self.type_id,
-                   self.logo_id, self.user_id, self.access_hash)
+                   self.logo_id, self.user_id, self.access_hash, self.publish_date)
 
 
 class Logo(Base):
@@ -166,9 +163,8 @@ def insert_content(content):
     try:
         session.add(content)
         session.commit()
-        return True
+        return content.id
     except ValueError:
-        print(ValueError)
         return False
 
 
@@ -176,9 +172,8 @@ def insert_logo(logo):
     try:
         session.add(logo)
         session.commit()
-        return True
+        return logo.id
     except ValueError:
-        print(ValueError)
         return False
 
 
@@ -191,7 +186,6 @@ def insert_category(category):
         session.commit()
         return True
     except ValueError:
-        print(ValueError)
         return False
 
 
@@ -204,7 +198,20 @@ def insert_type(new_type):
         session.commit()
         return True
     except ValueError:
-        print(ValueError)
+        return False
+
+
+def insert_content_to_category(content_id, category_id):
+    content_to_category_old = session.query(ContentToCategory). \
+        filter(ContentToCategory.content_id == content_id, ContentToCategory.category_id == category_id).one_or_none()
+    if content_to_category_old:
+        return False
+    try:
+        content_to_category = ContentToCategory(content_id, category_id)
+        session.add(content_to_category)
+        session.commit()
+        return True
+    except ValueError:
         return False
 
 
