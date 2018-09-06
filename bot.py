@@ -87,24 +87,28 @@ def start_conversation(bot, update):
         user_panel(bot, update)
 
 
+# ============================================== Buttons ===================================================
+admin_buttons = [
+    TemplateMessageButton(text=TMessage.get_sent_content, value=TMessage.get_sent_content, action=0),
+    TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
+    TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
+    TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
+    TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
+    TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
+user_buttons = [
+    TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
+    TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
+    TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
+
+
 # ============================================== Admin Panel ===================================================
 def admin_panel(bot, update):
     user_peer = update.get_effective_user()
-    user_id = user_peer.peer_id
-    if not is_admin(user_id):
-        return 0
-    btn_list = [
-        TemplateMessageButton(text=TMessage.get_sent_content, value=TMessage.get_sent_content, action=0),
-        TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
-        TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
-        TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
-        TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
-    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    template_message = TemplateMessage(general_message=general_message, btn_list=admin_buttons)
     kwargs = {"message": template_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success_send_message,
-                     failure_callback=failure_send_message,
-                     kwargs=kwargs)
+                     failure_callback=failure_send_message, kwargs=kwargs)
     dispatcher.finish_conversation(update)
 
 
@@ -411,10 +415,8 @@ def add_type(bot, update):
 # ============================================== User Panel ===================================================
 def user_panel(bot, update):
     user_peer = update.get_effective_user()
-    btn_list = [TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
-                TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
     general_message = TextMessage(ReadyMessage.start_conversation)
-    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    template_message = TemplateMessage(general_message=general_message, btn_list=user_buttons)
     kwargs = {"message": template_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(template_message, user_peer, success_callback=success_send_message,
                      failure_callback=failure_send_message,
