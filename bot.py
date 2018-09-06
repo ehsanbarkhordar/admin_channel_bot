@@ -10,7 +10,7 @@ from db.db_handler import create_all_table, get_all_categories, get_category_by_
     insert_content, insert_logo, Logo, Content, \
     get_logo_by_fileid_access_hash, insert_category, Category, get_unpublished_content, get_category_by_id, \
     get_logo_by_id, change_publish_status, change_description, get_content_by_id, Type, insert_type, get_all_type, \
-    get_type_by_name, change_logo, ContentToCategory, insert_content_to_category
+    get_type_by_name, change_logo, insert_content_to_category, get_type_by_id
 from balebot.updater import Updater
 from balebot.utils.logger import Logger
 from bot_config import BotConfig
@@ -113,6 +113,42 @@ def admin_panel(bot, update):
     dispatcher.finish_conversation(update)
 
 
+@dispatcher.message_handler(TextFilter(pattern=Regex.number_regex))
+def show_content(bot, update):
+    user_peer = update.get_effective_user()
+    content_id = update.get_effective_message().text
+    user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
+    content = get_content_by_id(content_id)
+    if content is None:
+        general_message = TextMessage(ReadyMessage.content_not_found)
+        btn_list = [TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
+        template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+        kwargs = {"message": template_message, "update": update, "bot": bot, "try_times": 1}
+        bot.send_message(template_message, user_peer, success_callback=success_send_message,
+                         failure_callback=failure_send_message, kwargs=kwargs)
+        dispatcher.finish_conversation(update)
+        return 0
+    content_to_category_obj = content.content_to_category[0]
+    category = get_category_by_id(content_to_category_obj.category_id)
+    content_type=get_type_by_id(category.type_id)
+    logo = get_logo_by_id(content.logo_id)
+    text_message = TextMessage((ReadyMessage.request_content_text.format(eng_to_arabic_number(content.id),
+                                                                         content_type.name,
+                                                                         content.name,
+                                                                         content.description,
+                                                                         category.name,
+                                                                         content.nick_name,
+                                                                         content.nick_name)))
+    photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
+                                 250, file_storage_version=1, caption_text=text_message)
+    kwargs = {"message": photo_message, "update": update, "bot": bot, "try_times": 1}
+    bot.send_message(photo_message, user_peer, success_callback=success_send_message_and_start_again,
+                     failure_callback=failure_send_message, kwargs=kwargs)
+    dispatcher.finish_conversation(update)
+
+
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.get_sent_content]))
 def get_sent_content(bot, update):
     user_peer = update.get_effective_user()
@@ -124,8 +160,7 @@ def get_sent_content(bot, update):
         text_message = TextMessage(ReadyMessage.no_new_content_recently)
         kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success_send_message_and_start_again,
-                         failure_callback=failure_send_message,
-                         kwargs=kwargs)
+                         failure_callback=failure_send_message, kwargs=kwargs)
         return 0
     for content in unpublished_content:
         btn_list = [
@@ -136,26 +171,30 @@ def get_sent_content(bot, update):
             TemplateMessageButton(text=TMessage.accept_with_edit,
                                   value=TMessage.accept_with_edit + " - " + eng_to_arabic_number(content.id),
                                   action=0)]
-        category = get_category_by_id(content.category_id)
+        content_to_category_obj = content.content_to_category[0]
+        category = get_category_by_id(content_to_category_obj.category_id)
         logo = get_logo_by_id(content.logo_id)
-        text_message = TextMessage((ReadyMessage.request_content_text.format(content.name,
-                                                                             content.description,
-                                                                             category.name,
-                                                                             content.nick_name,
-                                                                             content.nick_name)))
+        content_type = get_type_by_id(category.type_id)
+        text_message = TextMessage(
+            (ReadyMessage.request_content_text.format(eng_to_arabic_number(content.id),
+                                                      content_type.name,
+                                                      content.name,
+                                                      content.description,
+                                                      category.name,
+                                                      content.nick_name,
+                                                      content.nick_name)))
         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
                                      250, file_storage_version=1, caption_text=text_message)
 
         template_message = TemplateMessage(general_message=photo_message, btn_list=btn_list)
         kwargs = {"message": template_message, "update": update, "bot": bot, "try_times": 1}
         bot.send_message(template_message, user_peer, success_callback=success_send_message,
-                         failure_callback=failure_send_message,
-                         kwargs=kwargs)
+                         failure_callback=failure_send_message, kwargs=kwargs)
     dispatcher.finish_conversation(update)
 
 
-# @dispatcher.message_handler(
-#     TemplateResponseFilter(keywords=[TMessage.accept, TMessage.reject, TMessage.accept_with_edit]))
+@dispatcher.message_handler(
+    TemplateResponseFilter(keywords=[TMessage.accept, TMessage.accept_with_edit, TMessage.reject]))
 def add_or_reject_content(bot, update):
     user_peer = update.get_effective_user()
     message_text = update.get_effective_message().text_message
@@ -175,8 +214,7 @@ def add_or_reject_content(bot, update):
         text_message = TextMessage(ReadyMessage.content_sent_before)
         kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
         bot.send_message(text_message, user_peer, success_callback=success_send_message,
-                         failure_callback=failure_send_message,
-                         kwargs=kwargs)
+                         failure_callback=failure_send_message, kwargs=kwargs)
         return 0
     if action == TMessage.accept:
         change_publish_status(content_id, "1")
@@ -280,7 +318,7 @@ def get_new_logo(bot, update):
     change_publish_status(content_id, "1")
     text_message = TextMessage(ReadyMessage.replace_logo_successfully)
     kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
-    bot.send_message(text_message, user_peer, success_callback=success_send_message,
+    bot.send_message(text_message, user_peer, success_callback=success_send_message_and_start_again,
                      failure_callback=failure_send_message, kwargs=kwargs)
     dispatcher.finish_conversation(update)
 

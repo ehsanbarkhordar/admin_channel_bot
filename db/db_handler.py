@@ -62,7 +62,7 @@ class Content(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     nick_name = Column(String, nullable=False)
-    category = relationship("ContentToCategory")
+    content_to_category = relationship("ContentToCategory")
     logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
     allow_publish = Column(Integer, default=0, nullable=False)
@@ -229,6 +229,10 @@ def get_category_by_name(category_name):
 
 def get_type_by_name(type_name):
     return session.query(Type).filter(Type.name == type_name).one_or_none()
+
+
+def get_type_by_id(type_id):
+    return session.query(Type).filter(Type.id == type_id).one_or_none()
 
 
 def get_category_by_id(category_id):

@@ -22,5 +22,5 @@ class BotConfig:
 
     admin_list = [{"user_id": "1428351868", "access_hash": "-2295479097333507622"},
                   {"user_id": "201707397", "access_hash": "-2163233886830599507"},
-                  {"user_id": "762342807", "access_hash": "-1703674591054484462"}]
+                  {"user_id": "1458898994", "access_hash": "-5085852276019395860"}]
     channel = {"name": "کانال تستی", "channel_id": "24335167", "channel_access_hash": "1766074642907138471"}

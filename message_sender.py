@@ -48,7 +48,7 @@ class MessageSender:
                         row = rows[id_index]
                         category = get_category_by_id(row.category_id)
                         logo = get_logo_by_id(row.channel_logo_id)
-                        text_message = TextMessage(ReadyMessage.request_content_text.format(row.channel_name,
+                        text_message = TextMessage(ReadyMessage.content_template.format(row.channel_name,
                                                                                             row.channel_description,
                                                                                             category.name,
                                                                                             row.channel_nick_name,
