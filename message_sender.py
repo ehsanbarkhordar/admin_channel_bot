@@ -8,7 +8,7 @@ from balebot.utils.logger import Logger
 from bot_config import BotConfig
 from constant.message import ReadyMessage, LogMessage
 from db.db_handler import db, get_accept_content, get_category_by_id, get_logo_by_id, \
-    change_is_sent
+    change_is_sent, get_type_by_id
 
 
 class MessageSender:
@@ -46,13 +46,15 @@ class MessageSender:
                             self.check_next = True
                             return 0
                         row = rows[id_index]
-                        category = get_category_by_id(row.category_id)
-                        logo = get_logo_by_id(row.channel_logo_id)
-                        text_message = TextMessage(ReadyMessage.content_template.format(row.channel_name,
-                                                                                            row.channel_description,
-                                                                                            category.name,
-                                                                                            row.channel_nick_name,
-                                                                                            row.channel_nick_name))
+                        content_to_category_obj = row.content_to_category[0]
+                        category = get_category_by_id(content_to_category_obj.category_id)
+                        logo = get_logo_by_id(row.logo_id)
+                        content_type = get_type_by_id(category.type_id)
+                        text_message = TextMessage(ReadyMessage.content_template.format(content_type.name, row.name,
+                                                                                        row.description,
+                                                                                        category.name,
+                                                                                        row.nick_name,
+                                                                                        row.nick_name))
                         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size,
                                                      "image/jpeg", None, 250,
                                                      250, file_storage_version=1, caption_text=text_message)

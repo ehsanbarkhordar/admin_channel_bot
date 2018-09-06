@@ -101,6 +101,8 @@ user_buttons = [
     TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
     TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
 
+allow_publish_dict = {0: "بررسی نشده", 1: "در صف انتشار", -1: "رد شده"}
+
 
 # ============================================== Admin Panel ===================================================
 def admin_panel(bot, update):
@@ -132,15 +134,18 @@ def show_content(bot, update):
         return 0
     content_to_category_obj = content.content_to_category[0]
     category = get_category_by_id(content_to_category_obj.category_id)
-    content_type=get_type_by_id(category.type_id)
+    content_type = get_type_by_id(category.type_id)
     logo = get_logo_by_id(content.logo_id)
-    text_message = TextMessage((ReadyMessage.request_content_text.format(eng_to_arabic_number(content.id),
-                                                                         content_type.name,
-                                                                         content.name,
-                                                                         content.description,
-                                                                         category.name,
-                                                                         content.nick_name,
-                                                                         content.nick_name)))
+    print(content.allow_publish)
+    allow_publish = allow_publish_dict.get(content.allow_publish)
+    text_message = TextMessage(ReadyMessage.request_content_text.format(eng_to_arabic_number(content.id),
+                                                                        content_type.name,
+                                                                        content.name,
+                                                                        content.description,
+                                                                        category.name,
+                                                                        content.nick_name,
+                                                                        content.nick_name)+"\n"
+                               + ReadyMessage.publish_status.format(allow_publish))
     photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
                                  250, file_storage_version=1, caption_text=text_message)
     kwargs = {"message": photo_message, "update": update, "bot": bot, "try_times": 1}

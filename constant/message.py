@@ -20,7 +20,7 @@ class ReadyMessage:
     category_added_successfully = "دسته {} با *موفقیت* اضافه گردید."
     type_added_successfully = "نوع {} با *موفقیت* اضافه گردید."
     content_not_found = "مطلب مورد نظر پیدا نشد!"
-
+    publish_status="وضعیت انتشار: {}"
     request_content_text = "کد محتوا: {}\n" \
                            "*{}* \n" \
                            "📺 {} \n" \
