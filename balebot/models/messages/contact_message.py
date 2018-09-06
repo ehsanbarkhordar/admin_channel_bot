@@ -1,11 +1,13 @@
 import json as json_handler
 
 from balebot.models.base_models.raw_json import RawJson
+from balebot.models.messages.base_message import BaseMessage
 from balebot.models.constants.errors import Error
 from balebot.models.constants.raw_json_type import RawJsonType
+from balebot.models.constants.message_type import MessageType
 
 
-class Contact(RawJson):
+class ContactMessage(RawJson, BaseMessage):
     def __init__(self, name, emails, phones):
         self.name = str(name)
 
@@ -20,17 +22,20 @@ class Contact(RawJson):
             raise ValueError(Error.unacceptable_object_type)
 
     def get_json_object(self):
-        data = {
-            "dataType": RawJsonType.contact,
-            "data": {
-                RawJsonType.contact: {
-                    "name": self.name,
-                    "emails": self.emails,
-                    "phones": self.phones
-                }
-            }
-        }
 
+        data = {
+            "$type": MessageType.json_message,
+            "rawJson": json_handler.dumps({
+                "dataType": RawJsonType.contact,
+                "data": {
+                    RawJsonType.contact: {
+                        "name": self.name,
+                        "emails": self.emails,
+                        "phones": self.phones
+                    }
+                }
+            })
+        }
         return data
 
     def get_json_str(self):
