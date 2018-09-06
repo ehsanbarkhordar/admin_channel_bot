@@ -43,7 +43,7 @@ services:
       - GRAYLOG_PORT=12201
       - LOG_LEVEL=10
       - LOG_FACILITY_NAME=admin_channel_bot_facility
-      - MONITORING_HASH=cabb3f498ac5a037f669f658f1be08c3
+      - MONITORING_HASH=
     depends_on:
      - pg_admin_channel_bot
     restart: always # use always 

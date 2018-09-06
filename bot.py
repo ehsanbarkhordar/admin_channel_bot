@@ -1,4 +1,5 @@
 import datetime
+import os
 import re
 
 from balebot.filters import TemplateResponseFilter, TextFilter, DefaultFilter, PhotoFilter
@@ -95,6 +96,7 @@ admin_buttons = [
     TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
     TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
     TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
+    TemplateMessageButton(text=TMessage.set_publish_time, value=TMessage.set_publish_time, action=0),
     TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
 user_buttons = [
     TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
@@ -144,7 +146,7 @@ def show_content(bot, update):
                                                                         content.description,
                                                                         category.name,
                                                                         content.nick_name,
-                                                                        content.nick_name)+"\n"
+                                                                        content.nick_name) + "\n"
                                + ReadyMessage.publish_status.format(allow_publish))
     photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size, "image/jpeg", None, 250,
                                  250, file_storage_version=1, caption_text=text_message)
@@ -579,6 +581,45 @@ def get_content_logo(bot, update):
     content_id = insert_content(content_obj)
     insert_content_to_category(content_id, category_id)
     text_message = TextMessage(ReadyMessage.success_send_content)
+    kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
+    bot.send_message(text_message, user_peer, success_callback=success_send_message_and_start_again,
+                     failure_callback=failure_send_message, kwargs=kwargs)
+    dispatcher.finish_conversation(update)
+
+
+# ============================================== Info ===================================================
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.set_publish_time]))
+def get_publish_hour(bot, update):
+    user_peer = update.get_effective_user()
+    user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
+    btn_list = [TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
+    general_message = TextMessage(ReadyMessage.send_new_publish_hour)
+    template_message = TemplateMessage(general_message=general_message, btn_list=btn_list)
+    kwargs = {"message": template_message, "update": update, "bot": bot, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success_send_message,
+                     failure_callback=failure_send_message, kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(
+        update, [CommandHandler("start", start_conversation),
+                 MessageHandler(TextFilter(pattern=Regex.number_regex), set_publish_hour),
+                 MessageHandler(DefaultFilter(), start_conversation)])
+
+
+def set_publish_hour(bot, update):
+    user_peer = update.get_effective_user()
+    start_publish_hour = update.get_effective_message().text
+    start_publish_hour = arabic_to_eng_number(start_publish_hour)
+    start_publish_hour = int(start_publish_hour)
+    user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
+    if 23 >= start_publish_hour >= 0:
+        start_publish_hour = str(start_publish_hour)
+        os.environ['START_PUBLISH_HOUR'] = start_publish_hour
+        text_message = TextMessage(ReadyMessage.set_publish_hour_successfully)
+    else:
+        text_message = TextMessage(ReadyMessage.invalid_publish_hour)
     kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success_send_message_and_start_again,
                      failure_callback=failure_send_message, kwargs=kwargs)
