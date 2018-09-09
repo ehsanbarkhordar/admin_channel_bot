@@ -93,17 +93,25 @@ def start_conversation(bot, update):
 admin_buttons = [
     TemplateMessageButton(text=TMessage.get_sent_content, value=TMessage.get_sent_content, action=0),
     TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
-    TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
-    TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
-    TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
+    TemplateMessageButton(text=TMessage.manage_category, value=TMessage.manage_category, action=0),
+    TemplateMessageButton(text=TMessage.manage_type, value=TMessage.manage_type, action=0),
+    # TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
     TemplateMessageButton(text=TMessage.set_publish_time, value=TMessage.set_publish_time, action=0),
     TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
 user_buttons = [
     TemplateMessageButton(text=TMessage.request_content, value=TMessage.request_content, action=0),
-    TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
+    # TemplateMessageButton(text=TMessage.search_content, value=TMessage.search_content, action=0),
     TemplateMessageButton(text=TMessage.info, value=TMessage.info, action=0)]
 
 allow_publish_dict = {0: "بررسی نشده", 1: "در صف انتشار", -1: "رد شده"}
+category_and_type_options = [
+    TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
+    TemplateMessageButton(text=TMessage.edit_type, value=TMessage.edit_type, action=0),
+    TemplateMessageButton(text=TMessage.remove_type, value=TMessage.remove_type, action=0),
+    TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
+    TemplateMessageButton(text=TMessage.edit_category, value=TMessage.edit_category, action=0),
+    TemplateMessageButton(text=TMessage.remove_category, value=TMessage.remove_category, action=0),
+    TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
 
 
 # ============================================== Admin Panel ===================================================
@@ -351,6 +359,30 @@ def reject_reason(bot, update):
     dispatcher.finish_conversation(update)
 
 
+# ============================================ Manage Type & Category=================================================
+@dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.manage_type, TMessage.manage_category]))
+def show_options(bot, update):
+    user_peer = update.get_effective_user()
+    user_id = user_peer.peer_id
+    if not is_admin(user_id):
+        return 0
+    general_message = TextMessage(ReadyMessage.choose_type)
+    template_message = TemplateMessage(general_message=general_message, btn_list=category_and_type_options)
+    kwargs = {"message": template_message, "update": update, "bot": bot, "try_times": 1}
+    bot.send_message(template_message, user_peer, success_callback=success_send_message,
+                     failure_callback=failure_send_message, kwargs=kwargs)
+    dispatcher.register_conversation_next_step_handler(
+        update,
+        [CommandHandler("start", start_conversation),
+         MessageHandler(TemplateResponseFilter(keywords=[TMessage.add_type]), get_type_name),
+         MessageHandler(TemplateResponseFilter(keywords=[TMessage.edit_type]), choose_type),
+         MessageHandler(TemplateResponseFilter(keywords=[TMessage.remove_type]), choose_type),
+         MessageHandler(TemplateResponseFilter(keywords=[TMessage.add_category]), choose_type),
+         MessageHandler(TemplateResponseFilter(keywords=[TMessage.edit_category]), choose_type),
+         MessageHandler(TemplateResponseFilter(keywords=[TMessage.remove_category]), choose_type),
+         MessageHandler(DefaultFilter(), start_conversation)])
+
+
 # ============================================== Add Category ===================================================
 @dispatcher.message_handler(TemplateResponseFilter(keywords=[TMessage.add_category]))
 def choose_type(bot, update):
@@ -484,7 +516,8 @@ def get_content_type(bot, update):
     content_type_name = update.get_effective_message().text_message
     content_type = get_type_by_name(content_type_name)
     dispatcher.set_conversation_data(update, "content_type_id", content_type.id)
-    text_message = TextMessage(ReadyMessage.enter_content_name)
+    dispatcher.set_conversation_data(update, "content_type_name", content_type_name)
+    text_message = TextMessage(ReadyMessage.enter_content_name.format(content_type_name))
     kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success_send_message,
                      failure_callback=failure_send_message, kwargs=kwargs)
@@ -498,7 +531,8 @@ def get_content_name(bot, update):
     user_peer = update.get_effective_user()
     content_name = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "content_name", content_name)
-    text_message = TextMessage(ReadyMessage.enter_content_nick_name)
+    content_type_name = dispatcher.get_conversation_data(update, "content_type_name")
+    text_message = TextMessage(ReadyMessage.enter_content_nick_name.format(content_type_name))
     kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success_send_message,
                      failure_callback=failure_send_message, kwargs=kwargs)
@@ -512,7 +546,8 @@ def get_content_nick_name(bot, update):
     user_peer = update.get_effective_user()
     nick_name = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "content_nick_name", nick_name)
-    text_message = TextMessage(ReadyMessage.enter_content_description)
+    content_type_name = dispatcher.get_conversation_data(update, "content_type_name")
+    text_message = TextMessage(ReadyMessage.enter_content_description.format(content_type_name))
     kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success_send_message,
                      failure_callback=failure_send_message, kwargs=kwargs)
@@ -526,7 +561,8 @@ def get_content_description(bot, update):
     user_peer = update.get_effective_user()
     description = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "content_description", description)
-    general_message = TextMessage(ReadyMessage.choose_content_category)
+    content_type_name = dispatcher.get_conversation_data(update, "content_type_name")
+    general_message = TextMessage(ReadyMessage.choose_content_category.format(content_type_name))
     category_list = get_all_categories()
     category_name_list = []
     btn_list = []
@@ -548,7 +584,8 @@ def get_content_category(bot, update):
     category_name = update.get_effective_message().text_message
     category = get_category_by_name(category_name)
     dispatcher.set_conversation_data(update, "category_id", category.id)
-    text_message = TextMessage(ReadyMessage.upload_content_log)
+    content_type_name = dispatcher.get_conversation_data(update, "content_type_name")
+    text_message = TextMessage(ReadyMessage.upload_content_log.format(content_type_name))
     kwargs = {"message": text_message, "update": update, "bot": bot, "try_times": 1}
     bot.send_message(text_message, user_peer, success_callback=success_send_message,
                      failure_callback=failure_send_message, kwargs=kwargs)
