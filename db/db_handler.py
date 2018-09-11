@@ -115,10 +115,27 @@ def change_publish_status(content_id, status_code):
         return False
 
 
-def change_description(content_id, description):
+def change_text_content(content_id, name=None, nick_name=None, description=None):
     content = session.query(Content).filter(Content.id == content_id).one_or_none()
     try:
-        content.description = description
+        if name:
+            content.name = name
+        if nick_name:
+            content.nick_name = nick_name
+        if description:
+            content.description = description
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
+def change_category_content(content_id, category_id):
+    content_to_category = session.query(ContentToCategory).filter(ContentToCategory.content_id == content_id).first()
+    try:
+        if content_to_category:
+            content_to_category.category_id = category_id
         session.commit()
         return True
     except ValueError:
@@ -141,6 +158,31 @@ def change_is_sent(content_id, is_sent):
     content = session.query(Content).filter(Content.id == content_id).one_or_none()
     try:
         content.is_sent = int(is_sent)
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
+def change_type(type_id, new_type_name):
+    exact_type = session.query(Type).filter(Type.id == type_id).one_or_none()
+    try:
+        exact_type.name = new_type_name
+        session.commit()
+        return True
+    except ValueError:
+        print(ValueError)
+        return False
+
+
+def change_category(category_id, new_cat_name=None, new_type_id=None):
+    category = session.query(Category).filter(Category.id == category_id).one_or_none()
+    try:
+        if new_cat_name:
+            category.name = new_cat_name
+        if new_type_id:
+            category.type_id = new_type_id
         session.commit()
         return True
     except ValueError:
@@ -178,7 +220,8 @@ def insert_logo(logo):
 
 
 def insert_category(category):
-    category_old = session.query(Category).filter(Category.name == category.name).one_or_none()
+    category_old = session.query(Category).filter(Category.name == category.name,
+                                                  Category.type_id == category.type_id).one_or_none()
     if category_old:
         return ReadyMessage.duplicated_category
     try:
@@ -219,12 +262,17 @@ def get_all_categories():
     return session.query(Category).all()
 
 
+def get_category(category_name=None, type_id=None):
+    if category_name and type_id:
+        return session.query(Category).filter(Category.name == category_name, Category.type_id == type_id).one_or_none()
+    elif category_name:
+        return session.query(Category).filter(Category.name == category_name).all()
+    elif type_id:
+        return session.query(Category).filter(Category.type_id == type_id).all()
+
+
 def get_all_type():
     return session.query(Type).all()
-
-
-def get_category_by_name(category_name):
-    return session.query(Category).filter(Category.name == category_name).one_or_none()
 
 
 def get_type_by_name(type_name):
@@ -249,3 +297,25 @@ def get_logo_by_id(logo_id):
 
 def get_content_by_id(content_id):
     return session.query(Content).filter(Content.id == content_id).one_or_none()
+
+
+def remove_category(category_id):
+    category = session.query(Category).filter(Category.id == category_id).one_or_none()
+    if category:
+        try:
+            session.delete(category)
+            session.commit()
+            return True
+        except ValueError:
+            return False
+
+
+def remove_type(type_id):
+    a_type = session.query(Type).filter(Type.id == type_id).one_or_none()
+    if a_type:
+        try:
+            session.delete(a_type)
+            session.commit()
+            return True
+        except ValueError:
+            return False

@@ -50,9 +50,11 @@ class MessageSender:
                         category = get_category_by_id(content_to_category_obj.category_id)
                         logo = get_logo_by_id(row.logo_id)
                         content_type = get_type_by_id(category.type_id)
-                        text_message = TextMessage(ReadyMessage.content_template.format(content_type.name, row.name,
+                        text_message = TextMessage(ReadyMessage.content_template.format(row.name,
                                                                                         row.description,
-                                                                                        category.name,
+                                                                                        category.name.replace(" ", "_"),
+                                                                                        content_type.name.replace(" ",
+                                                                                                                  "_"),
                                                                                         row.nick_name,
                                                                                         row.nick_name))
                         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size,
