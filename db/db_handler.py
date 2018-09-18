@@ -29,7 +29,7 @@ class Type(Base):
     __tablename__ = 'type'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     name = Column(String, nullable=False)
-    category = relationship("Category")
+    category = relationship("Category", cascade="all,delete")
 
     def __init__(self, name):
         self.name = name
@@ -39,7 +39,8 @@ class Category(Base):
     __tablename__ = 'category'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     name = Column(String, nullable=False)
-    type_id = Column(Integer, ForeignKey('type.id'))
+    type_id = Column(Integer, ForeignKey('type.id', onupdate="CASCADE", ondelete="CASCADE"))
+    content_to_category = relationship("ContentToCategory", cascade='all,delete')
 
     def __init__(self, name, type_id):
         self.name = name
@@ -48,8 +49,8 @@ class Category(Base):
 
 class ContentToCategory(Base):
     __tablename__ = 'content_to_category'
-    content_id = Column(Integer, ForeignKey('content.id'), primary_key=True)
-    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
+    content_id = Column(Integer, ForeignKey('content.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
+    category_id = Column(Integer, ForeignKey('category.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
 
     def __init__(self, content_id, category_id):
         self.content_id = content_id
@@ -62,7 +63,7 @@ class Content(Base):
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     nick_name = Column(String, nullable=False)
-    content_to_category = relationship("ContentToCategory")
+    content_to_category = relationship("ContentToCategory", cascade='all,delete')
     logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
     create_date = Column(DateTime, default=datetime.now())
     allow_publish = Column(Integer, default=0, nullable=False)
@@ -83,8 +84,8 @@ class Content(Base):
 
     def __repr__(self):
         return "<Content(name='%s',description='%s',nick_name='%s'" \
-               ",category='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s',publish_date='%s)>" % (
-                   self.name, self.description, self.nick_name, self.category, self.type_id,
+               ",content_to_category='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s',publish_date='%s)>" % (
+                   self.name, self.description, self.nick_name, self.content_to_category, self.type_id,
                    self.logo_id, self.user_id, self.access_hash, self.publish_date)
 
 

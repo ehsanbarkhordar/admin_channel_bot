@@ -119,11 +119,11 @@ allow_publish_dict = {0: "بررسی نشده", 1: "تایید انتشار", -1
 category_options = [
     TemplateMessageButton(text=TMessage.add_category, value=TMessage.add_category, action=0),
     TemplateMessageButton(text=TMessage.edit_category, value=TMessage.edit_category, action=0),
-    # TemplateMessageButton(text=TMessage.remove_category, value=TMessage.remove_category, action=0),
+    TemplateMessageButton(text=TMessage.remove_category, value=TMessage.remove_category, action=0),
     TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
 type_options = [TemplateMessageButton(text=TMessage.add_type, value=TMessage.add_type, action=0),
                 TemplateMessageButton(text=TMessage.edit_type, value=TMessage.edit_type, action=0),
-                # TemplateMessageButton(text=TMessage.remove_type, value=TMessage.remove_type, action=0),
+                TemplateMessageButton(text=TMessage.remove_type, value=TMessage.remove_type, action=0),
                 TemplateMessageButton(text=TMessage.back, value=TMessage.back, action=0)]
 
 content_change_option = [
@@ -778,6 +778,12 @@ def request_content(bot, update):
     user_peer = update.get_effective_user()
     general_message = TextMessage(ReadyMessage.choose_content_type)
     all_types = get_all_type()
+    if not all_types:
+        message=TextMessage(ReadyMessage.no_content_type_available)
+        kwargs = {"message": message, "update": update, "bot": bot, "try_times": 1}
+        bot.send_message(message, user_peer, success_callback=success_send_message_and_start_again,
+                         failure_callback=failure_send_message, kwargs=kwargs)
+        return 0
     type_name_list = []
     btn_list = []
     for type in all_types:
@@ -863,9 +869,10 @@ def get_content_description(bot, update):
     user_peer = update.get_effective_user()
     description = update.get_effective_message().text
     dispatcher.set_conversation_data(update, "content_description", description)
+    content_type_id=dispatcher.get_conversation_data(update,"content_type_id")
     content_type_name = dispatcher.get_conversation_data(update, "content_type_name")
     general_message = TextMessage(ReadyMessage.choose_content_category.format(content_type_name))
-    category_list = get_all_categories()
+    category_list = get_category(type_id=content_type_id)
     category_name_list = []
     btn_list = []
     for category in category_list:
