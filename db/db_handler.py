@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import create_engine, ForeignKey, or_, PrimaryKeyConstraint, Table
-from sqlalchemy import Column, String, MetaData, Integer, Float, Boolean, Text, BigInteger, DateTime
+from sqlalchemy import create_engine, ForeignKey, or_
+from sqlalchemy import Column, String, MetaData, Integer, Text, BigInteger, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.orm import sessionmaker, relationship
 
 from bot_config import BotConfig
 from constant.message import ReadyMessage
