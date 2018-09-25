@@ -15,5 +15,6 @@ class BotConfig:
     start_publish_hour = int(os.environ.get('START_PUBLISH_HOUR', 19))
     stop_after = int(os.environ.get('STOP_AFTER', "1"))
     stop_publish_hour = start_publish_hour + stop_after
-    admin_list = ["1428351868", "1188642847", "201707397", "1458898994"]
-    channel = {"name": "کانال تستی", "channel_id": "24335167", "channel_access_hash": "1766074642907138471"}
+    admin_list = os.environ.get('ADMIN_LIST', "1428351868-1188642847-201707397-1458898994")
+    channel_id = os.environ.get('CHANNEL_ID', "24335167")
+    channel_access_hash = os.environ.get('CHANNEL_ACCESS_HASH', "1766074642907138471")

@@ -60,8 +60,8 @@ class MessageSender:
                         photo_message = PhotoMessage(logo.file_id, logo.access_hash, "channel", logo.file_size,
                                                      "image/jpeg", None, 250,
                                                      250, file_storage_version=1, caption_text=text_message)
-                        user_peer = Peer(PeerType.group, peer_id=BotConfig.channel.get("channel_id"),
-                                         access_hash=BotConfig.channel.get("channel_access_hash"))
+                        user_peer = Peer(PeerType.group, peer_id=BotConfig.channel_id,
+                                         access_hash=BotConfig.channel_access_hash)
                         kwargs = {"message": text_message, "content_id": row.id, "user_peer": user_peer, "try_times": 1}
                         self.bot.send_message(message=photo_message, peer=user_peer,
                                               success_callback=self.success_sent_message,

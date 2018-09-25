@@ -81,7 +81,9 @@ def success_send_message_and_edit_again(response, user_data):
 
 def is_admin(user_id):
     user_id = str(user_id)
-    for admin_id in BotConfig.admin_list:
+    admin_list = BotConfig.admin_list
+    admin_list = admin_list.split("-")
+    for admin_id in admin_list:
         if admin_id == user_id:
             return True
     return False
