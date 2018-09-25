@@ -128,7 +128,7 @@ class LogMessage:
     max_fail_retried = "max fails retried"
     invalid_game = "invalid game"
     edit_name = "edit name started"
-
+    new_content_submitted = "new content was submitted successfully"
     fail_notification = "notification push failed"
     success_notification = "{} notification pushed"
 

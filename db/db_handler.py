@@ -51,6 +51,8 @@ class ContentToCategory(Base):
     __tablename__ = 'content_to_category'
     content_id = Column(Integer, ForeignKey('content.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
     category_id = Column(Integer, ForeignKey('category.id', onupdate="CASCADE", ondelete="CASCADE"), primary_key=True)
+    content = relationship("Content", cascade='all,delete')
+    category = relationship("Category", cascade='all,delete')
 
     def __init__(self, content_id, category_id):
         self.content_id = content_id
@@ -64,7 +66,8 @@ class Content(Base):
     description = Column(Text, nullable=False)
     nick_name = Column(String, nullable=False)
     content_to_category = relationship("ContentToCategory", cascade='all,delete')
-    logo_id = Column(Integer, ForeignKey('logo.id'), nullable=False)
+    logo_id = Column(Integer, ForeignKey('logo.id', onupdate="CASCADE", ondelete="CASCADE"), nullable=False)
+    logo = relationship("Logo", cascade="all,delete", backref="content")
     create_date = Column(DateTime, default=datetime.now())
     allow_publish = Column(Integer, default=0, nullable=False)
     is_sent = Column(Integer, default=0, nullable=False)
@@ -72,11 +75,10 @@ class Content(Base):
     user_id = Column(Integer, nullable=False)
     access_hash = Column(String, nullable=False)
 
-    def __init__(self, name, description, nick_name, type_id, logo_id, user_id, access_hash, publish_date):
+    def __init__(self, name, description, nick_name, logo_id, user_id, access_hash, publish_date):
         self.name = name
         self.description = description
         self.nick_name = nick_name
-        self.type_id = type_id
         self.logo_id = logo_id
         self.user_id = user_id
         self.access_hash = access_hash
@@ -84,8 +86,8 @@ class Content(Base):
 
     def __repr__(self):
         return "<Content(name='%s',description='%s',nick_name='%s'" \
-               ",content_to_category='%s',type_id='%s',logo_id='%s',user_id='%i',access_hash='%s',publish_date='%s)>" % (
-                   self.name, self.description, self.nick_name, self.content_to_category, self.type_id,
+               ",content_to_category='%s',logo_id='%s',user_id='%i',access_hash='%s',publish_date='%s)>" % (
+                   self.name, self.description, self.nick_name, self.content_to_category,
                    self.logo_id, self.user_id, self.access_hash, self.publish_date)
 
 
@@ -96,8 +98,6 @@ class Logo(Base):
     access_hash = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)
     thumb = Column(String)
-    content = relationship("Content")
-
     def __init__(self, file_id, access_hash, file_size, thumb):
         self.file_id = file_id
         self.access_hash = access_hash
@@ -117,7 +117,7 @@ def change_publish_status(content_id, status_code):
 
 
 def change_text_content(content_id, name=None, nick_name=None, description=None):
-    content = session.query(Content).filter(Content.id == content_id).one_or_none()
+    content = session.query(Content).filter(Content.id == int(content_id)).one_or_none()
     try:
         if name:
             content.name = name
@@ -228,7 +228,7 @@ def insert_category(category):
     try:
         session.add(category)
         session.commit()
-        return True
+        return category.id
     except ValueError:
         return False
 
@@ -240,7 +240,7 @@ def insert_type(new_type):
     try:
         session.add(new_type)
         session.commit()
-        return True
+        return new_type.id
     except ValueError:
         return False
 
@@ -260,20 +260,20 @@ def insert_content_to_category(content_id, category_id):
 
 
 def get_all_categories():
-    return session.query(Category).all()
+    return session.query(Category).order_by(Category.id).all()
 
 
 def get_category(category_name=None, type_id=None):
     if category_name and type_id:
         return session.query(Category).filter(Category.name == category_name, Category.type_id == type_id).one_or_none()
     elif category_name:
-        return session.query(Category).filter(Category.name == category_name).all()
+        return session.query(Category).filter(Category.name == category_name).order_by(Category.id).all()
     elif type_id:
-        return session.query(Category).filter(Category.type_id == type_id).all()
+        return session.query(Category).filter(Category.type_id == type_id).order_by(Category.id).all()
 
 
 def get_all_type():
-    return session.query(Type).all()
+    return session.query(Type).order_by(Type.id).all()
 
 
 def get_type_by_name(type_name):
@@ -316,6 +316,28 @@ def remove_type(type_id):
     if a_type:
         try:
             session.delete(a_type)
+            session.commit()
+            return True
+        except ValueError:
+            return False
+
+
+def remove_content(content_id):
+    a_content = session.query(Content).filter(Content.id == content_id).one_or_none()
+    if a_content:
+        try:
+            session.delete(a_content)
+            session.commit()
+            return True
+        except ValueError:
+            return False
+
+
+def remove_logo(logo_id):
+    logo = session.query(Logo).filter(Logo.id == logo_id).one_or_none()
+    if logo:
+        try:
+            session.delete(logo)
             session.commit()
             return True
         except ValueError:
